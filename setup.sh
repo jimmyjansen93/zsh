@@ -21,6 +21,8 @@ warning() {
 CONFIG_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ZSHRC_FILE="$HOME/.zshrc"
 
+log "Removing existing symlink for .zshrc"
+rm -f "$ZSHRC_FILE"
 log "Creating symlink for .zshrc"
 ln -sf "$CONFIG_DIR/.zshrc" "$ZSHRC_FILE"
 log "Symlink created: $ZSHRC_FILE -> $CONFIG_DIR/.zshrc"
