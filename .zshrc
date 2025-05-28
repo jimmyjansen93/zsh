@@ -69,7 +69,7 @@ brew() {
 }
 
 update() {
-  local repos=(nvim aerospace sketchybar tmux ghostty starship karabiner zsh btop emacs)
+  local repos=(nvim aerospace sketchybar tmux ghostty starship karabiner zsh btop emacs brewfile)
   local config_dir="$HOME/.config"
   local updated_any=0
 
