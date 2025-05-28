@@ -26,3 +26,5 @@ rm -f "$ZSHRC_FILE"
 log "Creating symlink for .zshrc"
 ln -sf "$CONFIG_DIR/.zshrc" "$ZSHRC_FILE"
 log "Symlink created: $ZSHRC_FILE -> $CONFIG_DIR/.zshrc"
+
+brew install zsh >/dev/null 2>&1
