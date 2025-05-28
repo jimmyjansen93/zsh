@@ -71,34 +71,39 @@ brew() {
 update() {
   local repos=(nvim aerospace sketchybar tmux ghostty starship karabiner zsh btop emacs)
   local config_dir="$HOME/.config"
+  local updated_any=0
 
   if [ -f "$HOME/Brewfile" ]; then
     echo "Running brew bundle..."
-    (cd "$HOME" && brew bundle)
-  else
-    echo "No Brewfile found in $HOME, skipping brew bundle."
+    (cd "$HOME" && brew bundle > /dev/null 2>&1)
   fi
 
   for repo in "${repos[@]}"; do
     local dir="$config_dir/$repo"
     if [ ! -d "$dir/.git" ]; then
-      echo "Skipping $repo (no git repo at $dir)"
       continue
     fi
-    echo "Updating $repo..."
     cd "$dir"
+    local changed=0
     if [ -n "$(git status --porcelain)" ]; then
-      git add -A
-      git commit -m "chore: update config"
+      git add -A > /dev/null 2>&1
+      git commit -m "chore: update config" > /dev/null 2>&1 && changed=1
     fi
-    git fetch origin
-    git rebase origin/main || {
-      echo "Rebase failed for $repo, please resolve manually."
-      continue
-    }
-    git push origin HEAD:main
-    cd - >/dev/null
-    echo "Done with $repo."
+    git fetch origin > /dev/null 2>&1
+    if git rebase origin/main > /dev/null 2>&1; then
+      if [ $changed -eq 1 ]; then
+        git push origin HEAD:main > /dev/null 2>&1
+        echo "Updated $repo (committed, rebased, and pushed)"
+        updated_any=1
+      fi
+    else
+      echo "[WARN] Rebase failed for $repo, please resolve manually."
+    fi
+    cd - > /dev/null
   done
-  echo "All done!"
+  if [ $updated_any -eq 0 ]; then
+    echo "No config repos needed updating."
+  else
+    echo "Update complete."
+  fi
 }
