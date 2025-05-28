@@ -42,7 +42,7 @@ brew() {
     shift
     command brew bundle "$@"
 
-    EMACS_FORMULA=$( /opt/homebrew/bin/brew list --formula | grep -E '^emacs-plus@' | sort -V | tail -n1 )
+    EMACS_FORMULA=$( /opt/homebrew/bin/brew list --formula | grep '^emacs-plus@' | sort -V | tail -n1 )
     TARGET="$(/opt/homebrew/bin/brew --prefix "$EMACS_FORMULA")/Emacs.app"
     DEST="/Applications/Emacs.app"
 
