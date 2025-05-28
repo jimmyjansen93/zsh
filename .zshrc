@@ -15,8 +15,30 @@ export HOMEBREW_CLEANUP_MAX_AGE_DAYS=30
 export HOMEBREW_CLEANUP_PERIODIC_FULL_DAYS=14
 export HOMEBREW_UPGRADE_GREEDY=true
 
+alias ll='lsd -l'
+alias la='lsd -la'
+alias l='lsd'
+alias ls='lsd'
+alias cat='bat'
+alias grep='rg'
+alias find='fd'
+alias vi='nvim'
+alias vim='nvim'
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+alias .....='cd ../../../..'
+alias -- -='cd -'
+alias reload='source ~/.zshrc'
+
+eval "$(zoxide init zsh)"
+eval "$(thefuck --alias)"
+eval "$(direnv hook zsh)"
+
 brew() {
   if [[ $1 == bundle ]]; then
+    CUR_DIR=$(pwd)
+    cd $HOME
     shift
     command brew bundle "$@"
 
@@ -40,7 +62,43 @@ brew() {
         printf "\033[0;31mFailed to copy Emacs to /Applications\033[0m\n" >&2
       fi
     fi
+    cd $CUR_DIR
   else
     command brew "$@"
   fi
+}
+
+update() {
+  local repos=(nvim aerospace sketchybar tmux ghostty starship karabiner zsh btop emacs)
+  local config_dir="$HOME/.config"
+
+  if [ -f "$HOME/Brewfile" ]; then
+    echo "Running brew bundle..."
+    (cd "$HOME" && brew bundle)
+  else
+    echo "No Brewfile found in $HOME, skipping brew bundle."
+  fi
+
+  for repo in "${repos[@]}"; do
+    local dir="$config_dir/$repo"
+    if [ ! -d "$dir/.git" ]; then
+      echo "Skipping $repo (no git repo at $dir)"
+      continue
+    fi
+    echo "Updating $repo..."
+    cd "$dir"
+    if [ -n "$(git status --porcelain)" ]; then
+      git add -A
+      git commit -m "chore: update config"
+    fi
+    git fetch origin
+    git rebase origin/main || {
+      echo "Rebase failed for $repo, please resolve manually."
+      continue
+    }
+    git push origin HEAD:main
+    cd - >/dev/null
+    echo "Done with $repo."
+  done
+  echo "All done!"
 }
