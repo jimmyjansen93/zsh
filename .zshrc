@@ -76,6 +76,7 @@ update() {
   if [ -f "$HOME/Brewfile" ]; then
     echo "Running brew bundle..."
     (cd "$HOME" && brew bundle > /dev/null 2>&1)
+    brew bundle cleanup --prune=all -s
   fi
 
   for repo in "${repos[@]}"; do
