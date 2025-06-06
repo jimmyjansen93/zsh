@@ -95,7 +95,6 @@ brew() {
 update() {
   local repos=(nvim aerospace sketchybar tmux ghostty starship karabiner zsh btop emacs brewfile)
   local config_dir="$HOME/.config"
-  local updated_any=0
 
   if [[ -f $HOME/Brewfile ]]; then
     printf "${BLUE}Running brew bundle...${RESET}\n"
@@ -131,7 +130,6 @@ update() {
           printf "${BLUE}Pushing %s ...${RESET}\n" "$repo"
           if git push origin HEAD:main >/dev/null 2>&1; then
             printf "${GREEN}Updated %s (committed, rebased, and pushed)${RESET}\n" "$repo"
-            updated_any=1
           else
             printf "${YELLOW}Push failed for %s${RESET}\n" "$repo" >&2
           fi
@@ -142,12 +140,8 @@ update() {
     )
   done
 
-  if (( updated_any )); then
-    reload_zshrc
-    printf "${GREEN}Update complete.${RESET}\n"
-  else
-    printf "${BLUE}No config repos needed updating.${RESET}\n"
-  fi
+  reload_zshrc
+  printf "${GREEN}Update complete.${RESET}\n"
 }
 
 reload_zshrc() {
