@@ -6,6 +6,12 @@ export PATH="$PATH:$(go env GOPATH)/bin"
 export STARSHIP_CONFIG="$HOME/.config/starship/starship.toml"
 eval "$(starship init zsh)"
 
+export PNPM_HOME="/Users/jimmyjansen/Library/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+
 export HOMEBREW_NO_ENV_HINTS=true
 export HOMEBREW_MAKE_JOBS=$(sysctl -n hw.ncpu)
 export HOMEBREW_VERBOSE=true
@@ -77,12 +83,7 @@ update() {
     echo "Running brew bundle..."
     (cd "$HOME" && brew bundle > /dev/null 2>&1)
     echo "Brew cleanup"
-    brew bundle cleanup --prune=all -s
-  fi
-
-  if [ -f "$HOME/.zshrc" ]; then
-    echo "Sourcing zshrc"
-    tmux_send_to_all_panes "source $HOME/.zshrc" Enter
+    brew cleanup --prune=all -s
   fi
 
   for repo in "${repos[@]}"; do
@@ -90,15 +91,21 @@ update() {
     if [ ! -d "$dir/.git" ]; then
       continue
     fi
+
     cd "$dir"
     local changed=0
     if [ -n "$(git status --porcelain)" ]; then
       git add -A > /dev/null 2>&1
       git commit -m "chore: auto-update config" > /dev/null 2>&1 && changed=1
+      echo "Commited changes for $repo"
+    else
+      echo "No updates for $repo"
     fi
+
     git fetch origin > /dev/null 2>&1
     if git rebase origin/main > /dev/null 2>&1; then
       if [ $changed -eq 1 ]; then
+        echo "Pushing $repo"
         git push origin HEAD:main > /dev/null 2>&1
         echo "Updated $repo (committed, rebased, and pushed)"
         updated_any=1
@@ -106,8 +113,15 @@ update() {
     else
       echo "[WARN] Rebase failed for $repo, please resolve manually."
     fi
+
     cd - > /dev/null
   done
+
+  if [ -f "$HOME/.zshrc" ]; then
+    echo "Sourcing zshrc"
+    reload_zshrc()
+  fi
+
   if [ $updated_any -eq 0 ]; then
     echo "No config repos needed updating."
   else
@@ -121,10 +135,9 @@ tmux_send_to_all_panes() {
   done
 }
 
-# pnpm
-export PNPM_HOME="/Users/jimmyjansen/Library/pnpm"
-case ":$PATH:" in
-  *":$PNPM_HOME:"*) ;;
-  *) export PATH="$PNPM_HOME:$PATH" ;;
-esac
-# pnpm end
+reload_zshrc() {
+  source ~/.zshrc
+  tmux list-panes -F '#{pane_pid}' | xargs -n1 kill -USR1
+  print -Pr '%F{green}[zshrc reloaded]%f'
+}
+TRAPUSR1() reload_zshrc()
