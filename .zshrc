@@ -112,27 +112,27 @@ update() {
     fi
   fi
 
+  printf "${BLUE}Reloading zshrc\n"
+  reload_zshrc
+
   for repo in "${repos[@]}"; do
     local dir="$config_dir/$repo"
     [[ -d $dir/.git ]] || continue
 
     (
       cd "$dir" || return
-      local changed=0
       if [[ -n $(git status --porcelain) ]]; then
         git add -A >/dev/null 2>&1
-        git commit -m "chore: auto-update config" >/dev/null 2>&1 && changed=1
+        git commit -m "chore: auto-update config" >/dev/null 2>&1 
       fi
 
       git fetch origin >/dev/null 2>&1
       if git rebase origin/main >/dev/null 2>&1; then
-        if (( changed )); then
-          printf "${BLUE}Pushing %s ...${RESET}\n" "$repo"
-          if git push origin HEAD:main >/dev/null 2>&1; then
-            printf "${GREEN}Updated %s (committed, rebased, and pushed)${RESET}\n" "$repo"
-          else
-            printf "${YELLOW}Push failed for %s${RESET}\n" "$repo" >&2
-          fi
+        printf "${BLUE}Pushing %s ...${RESET}\n" "$repo"
+        if git push origin HEAD:main >/dev/null 2>&1; then
+          printf "${GREEN}Updated %s (committed, rebased, and pushed)${RESET}\n" "$repo"
+        else
+          printf "${YELLOW}Push failed for %s${RESET}\n" "$repo" >&2
         fi
       else
         printf "${YELLOW}[WARN] Rebase failed for %s, please resolve manually.${RESET}\n" "$repo" >&2
@@ -140,7 +140,6 @@ update() {
     )
   done
 
-  reload_zshrc
   printf "${GREEN}Update complete.${RESET}\n"
 }
 
@@ -152,4 +151,6 @@ reload_zshrc() {
   print -Pr '%F{green}[zshrc reloaded]%f'
 }
 
-TRAPUSR1() { reload_zshrc }
+TRAPUSR1() {
+  source ~/.zshrc
+}
