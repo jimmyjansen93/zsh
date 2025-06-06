@@ -1,12 +1,27 @@
-eval "$(fnm env --use-on-cd --corepack-enabled --resolve-engines)"
-source <(fzf --zsh)
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+RESET='\033[0m'
 
-export PATH="$PATH:$(go env GOPATH)/bin"
+if command -v fnm >/dev/null 2>&1; then
+  eval "$(fnm env --use-on-cd --corepack-enabled --resolve-engines)"
+fi
+
+if command -v fzf >/dev/null 2>&1; then
+  source <(fzf --zsh)
+fi
+
+if command -v go >/dev/null 2>&1; then
+  export PATH="$PATH:$(go env GOPATH)/bin"
+fi
 
 export STARSHIP_CONFIG="$HOME/.config/starship/starship.toml"
-eval "$(starship init zsh)"
+if command -v starship >/dev/null 2>&1; then
+  eval "$(starship init zsh)"
+fi
 
-export PNPM_HOME="/Users/jimmyjansen/Library/pnpm"
+export PNPM_HOME="$HOME/Library/pnpm"
 case ":$PATH:" in
   *":$PNPM_HOME:"*) ;;
   *) export PATH="$PNPM_HOME:$PATH" ;;
@@ -35,40 +50,43 @@ alias ...='cd ../..'
 alias ....='cd ../../..'
 alias .....='cd ../../../..'
 alias -- -='cd -'
-alias reload='source ~/.zshrc'
+alias reload='reload_zshrc'
 
-eval "$(zoxide init zsh)"
-eval "$(thefuck --alias)"
-eval "$(direnv hook zsh)"
+command -v zoxide  >/dev/null 2>&1 && eval "$(zoxide init zsh)"
+command -v thefuck >/dev/null 2>&1 && eval "$(thefuck --alias)"
+command -v direnv  >/dev/null 2>&1 && eval "$(direnv hook zsh)"
 
 brew() {
   if [[ $1 == bundle ]]; then
-    CUR_DIR=$(pwd)
-    cd $HOME
+    local cur_dir=$PWD
+    cd "$HOME" || return
     shift
     command brew bundle "$@"
 
-    EMACS_FORMULA=$( /opt/homebrew/bin/brew list --formula | grep '^emacs-plus@' | sort -V | tail -n1 )
-    TARGET="$(/opt/homebrew/bin/brew --prefix "$EMACS_FORMULA")/Emacs.app"
-    DEST="/Applications/Emacs.app"
+    local emacs_formula target dest needs_copy=1
+    emacs_formula=$(command brew list --formula | grep '^emacs-plus@' | sort -V | tail -n1)
+    if [[ -n $emacs_formula ]]; then
+      target="$(command brew --prefix "$emacs_formula")/Emacs.app"
+      dest="/Applications/Emacs.app"
 
-    needs_copy=true
-    if [[ -d "$DEST" ]]; then
-      old_sum=$(md5 -q "$DEST/Contents/MacOS/Emacs" 2>/dev/null || echo none)
-      new_sum=$(md5 -q "$TARGET/Contents/MacOS/Emacs" 2>/dev/null || echo diff)
-      [[ $old_sum == $new_sum ]] && needs_copy=false
-    fi
+      if [[ -d $dest ]]; then
+        local old_sum new_sum
+        old_sum=$(md5 -q "$dest/Contents/MacOS/Emacs" 2>/dev/null || printf '%s' none)
+        new_sum=$(md5 -q "$target/Contents/MacOS/Emacs" 2>/dev/null || printf '%s' diff)
+        [[ $old_sum == $new_sum ]] && needs_copy=0
+      fi
 
-    if $needs_copy; then
-      sudo rm -rf "$DEST"
-      if sudo cp -R "$TARGET" "$DEST"; then
-        /usr/bin/mdimport "$DEST" >/dev/null 2>&1
-        printf "\033[0;32mEmacs ($EMACS_FORMULA) copied to /Applications\033[0m\n"
-      else
-        printf "\033[0;31mFailed to copy Emacs to /Applications\033[0m\n" >&2
+      if (( needs_copy )); then
+        sudo rm -rf "$dest"
+        if sudo cp -R "$target" "$dest"; then
+          /usr/bin/mdimport "$dest" >/dev/null 2>&1
+          printf "${GREEN}Emacs (%s) copied to /Applications${RESET}\n" "$emacs_formula"
+        else
+          printf "${RED}Failed to copy Emacs to /Applications${RESET}\n" >&2
+        fi
       fi
     fi
-    cd $CUR_DIR
+    cd "$cur_dir" || return
   else
     command brew "$@"
   fi
@@ -79,65 +97,65 @@ update() {
   local config_dir="$HOME/.config"
   local updated_any=0
 
-  if [ -f "$HOME/Brewfile" ]; then
-    echo "Running brew bundle..."
-    (cd "$HOME" && brew bundle > /dev/null 2>&1)
-    echo "Brew cleanup"
-    brew cleanup --prune=all -s
+  if [[ -f $HOME/Brewfile ]]; then
+    printf "${BLUE}Running brew bundle...${RESET}\n"
+    if (cd "$HOME" && brew bundle >/dev/null 2>&1); then
+      printf "${GREEN}brew bundle completed successfully${RESET}\n"
+    else
+      printf "${RED}brew bundle failed${RESET}\n" >&2
+    fi
+
+    printf "${BLUE}Brew cleanup...${RESET}\n"
+    if brew cleanup --prune=all -s >/dev/null 2>&1; then
+      printf "${GREEN}brew cleanup completed${RESET}\n"
+    else
+      printf "${YELLOW}brew cleanup encountered issues${RESET}\n" >&2
+    fi
   fi
 
   for repo in "${repos[@]}"; do
     local dir="$config_dir/$repo"
-    if [ ! -d "$dir/.git" ]; then
-      continue
-    fi
+    [[ -d $dir/.git ]] || continue
 
-    cd "$dir"
-    local changed=0
-    if [ -n "$(git status --porcelain)" ]; then
-      git add -A > /dev/null 2>&1
-      git commit -m "chore: auto-update config" > /dev/null 2>&1 && changed=1
-      echo "Commited changes for $repo"
-    else
-      echo "No updates for $repo"
-    fi
-
-    git fetch origin > /dev/null 2>&1
-    if git rebase origin/main > /dev/null 2>&1; then
-      if [ $changed -eq 1 ]; then
-        echo "Pushing $repo"
-        git push origin HEAD:main > /dev/null 2>&1
-        echo "Updated $repo (committed, rebased, and pushed)"
-        updated_any=1
+    (
+      cd "$dir" || return
+      local changed=0
+      if [[ -n $(git status --porcelain) ]]; then
+        git add -A >/dev/null 2>&1
+        git commit -m "chore: auto-update config" >/dev/null 2>&1 && changed=1
       fi
-    else
-      echo "[WARN] Rebase failed for $repo, please resolve manually."
-    fi
 
-    cd - > /dev/null
+      git fetch origin >/dev/null 2>&1
+      if git rebase origin/main >/dev/null 2>&1; then
+        if (( changed )); then
+          printf "${BLUE}Pushing %s ...${RESET}\n" "$repo"
+          if git push origin HEAD:main >/dev/null 2>&1; then
+            printf "${GREEN}Updated %s (committed, rebased, and pushed)${RESET}\n" "$repo"
+            updated_any=1
+          else
+            printf "${YELLOW}Push failed for %s${RESET}\n" "$repo" >&2
+          fi
+        fi
+      else
+        printf "${YELLOW}[WARN] Rebase failed for %s, please resolve manually.${RESET}\n" "$repo" >&2
+      fi
+    )
   done
 
-  if [ -f "$HOME/.zshrc" ]; then
-    echo "Sourcing zshrc"
-    reload_zshrc()
-  fi
-
-  if [ $updated_any -eq 0 ]; then
-    echo "No config repos needed updating."
+  if (( updated_any )); then
+    reload_zshrc
+    printf "${GREEN}Update complete.${RESET}\n"
   else
-    echo "Update complete."
+    printf "${BLUE}No config repos needed updating.${RESET}\n"
   fi
-}
-
-tmux_send_to_all_panes() {
-  for _pane in $(tmux list-panes -F '#P'); do
-    tmux send-keys -t ${_pane} "$@" Enter
-  done
 }
 
 reload_zshrc() {
   source ~/.zshrc
-  tmux list-panes -F '#{pane_pid}' | xargs -n1 kill -USR1
+  if command -v tmux >/dev/null 2>&1; then
+    tmux list-panes -F '#{pane_pid}' | xargs -r -n1 kill -USR1
+  fi
   print -Pr '%F{green}[zshrc reloaded]%f'
 }
-TRAPUSR1() reload_zshrc()
+
+TRAPUSR1() { reload_zshrc }
