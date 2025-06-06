@@ -76,7 +76,13 @@ update() {
   if [ -f "$HOME/Brewfile" ]; then
     echo "Running brew bundle..."
     (cd "$HOME" && brew bundle > /dev/null 2>&1)
+    echo "Brew cleanup"
     brew bundle cleanup --prune=all -s
+  fi
+
+  if [ -f "$HOME/.zshrc" ]; then
+    echo "Sourcing zshrc"
+    tmux_send_to_all_panes "source $HOME/.zshrc" Enter
   fi
 
   for repo in "${repos[@]}"; do
@@ -88,7 +94,7 @@ update() {
     local changed=0
     if [ -n "$(git status --porcelain)" ]; then
       git add -A > /dev/null 2>&1
-      git commit -m "chore: update config" > /dev/null 2>&1 && changed=1
+      git commit -m "chore: auto-update config" > /dev/null 2>&1 && changed=1
     fi
     git fetch origin > /dev/null 2>&1
     if git rebase origin/main > /dev/null 2>&1; then
@@ -108,3 +114,17 @@ update() {
     echo "Update complete."
   fi
 }
+
+tmux_send_to_all_panes() {
+  for _pane in $(tmux list-panes -F '#P'); do
+    tmux send-keys -t ${_pane} "$@" Enter
+  done
+}
+
+# pnpm
+export PNPM_HOME="/Users/jimmyjansen/Library/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+# pnpm end
