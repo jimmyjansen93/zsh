@@ -112,7 +112,7 @@ update() {
     fi
   fi
 
-  printf "${BLUE}Reloading zshrc\n"
+  printf "${BLUE}Reloading zshrc${RESET}\n"
   reload_zshrc
 
   for repo in "${repos[@]}"; do
@@ -140,6 +140,7 @@ update() {
     )
   done
 
+  printf "${GREEN}_______________________________${RESET}\n"
   printf "${GREEN}Update complete.${RESET}\n"
 }
 
