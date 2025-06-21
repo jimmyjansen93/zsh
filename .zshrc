@@ -4,22 +4,13 @@ YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
 RESET='\033[0m'
 
-if command -v fnm >/dev/null 2>&1; then
-  eval "$(fnm env --use-on-cd --corepack-enabled --resolve-engines)"
-fi
+export PATH="$PATH:/opt/homebrew/opt/rustup/bin"
 
-if command -v fzf >/dev/null 2>&1; then
-  source <(fzf --zsh)
-fi
-
-if command -v go >/dev/null 2>&1; then
-  export PATH="$PATH:$(go env GOPATH)/bin"
-fi
-
+eval "$(fnm env --use-on-cd --corepack-enabled --resolve-engines)"
+source <(fzf --zsh)
+export PATH="$PATH:$(go env GOPATH)/bin"
 export STARSHIP_CONFIG="$HOME/.config/starship/starship.toml"
-if command -v starship >/dev/null 2>&1; then
-  eval "$(starship init zsh)"
-fi
+eval "$(starship init zsh)"
 
 export PNPM_HOME="$HOME/Library/pnpm"
 case ":$PATH:" in
@@ -139,6 +130,20 @@ update() {
       fi
     )
   done
+
+  printf "${GREEN}Updating PNPM tools${RESET}\n"
+  if pnpm update -g --latest >/dev/null 2>&1; then
+    printf "${GREEN}PNPM tools updated${RESET}\n"
+  else
+    printf "${YELLOW}PNPM tools update failed${RESET}\n"
+  fi
+
+  printf "${GREEN}Updating GO tools${RESET}\n"
+  if go-global-update >/dev/null 2>&1; then
+    printf "${GREEN}GO tools updated${RESET}\n"
+  else
+    printf "${YELLOW}GO tools update failed${RESET}\n"
+  fi
 
   printf "${GREEN}_______________________________${RESET}\n"
   printf "${GREEN}Update complete.${RESET}\n"
