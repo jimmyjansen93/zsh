@@ -6,6 +6,9 @@ RESET='\033[0m'
 
 export PATH="$PATH:/opt/homebrew/opt/rustup/bin"
 
+export CXXFLAGS="-std=c++23"
+export PATH="$(brew --prefix llvm)/bin:$PATH"
+
 eval "$(fnm env --use-on-cd --corepack-enabled --resolve-engines)"
 source <(fzf --zsh)
 export PATH="$PATH:$(go env GOPATH)/bin"
@@ -17,6 +20,8 @@ case ":$PATH:" in
   *":$PNPM_HOME:"*) ;;
   *) export PATH="$PNPM_HOME:$PATH" ;;
 esac
+
+export STARSHIP_LOG=error
 
 export HOMEBREW_NO_ENV_HINTS=true
 export HOMEBREW_MAKE_JOBS=$(sysctl -n hw.ncpu)
