@@ -136,21 +136,21 @@ update() {
     )
   done
 
-  printf "${GREEN}Updating PNPM tools${RESET}\n"
+  printf "${BLUE}Updating PNPM tools${RESET}\n"
   if pnpm update -g --latest >/dev/null 2>&1; then
     printf "${GREEN}PNPM tools updated${RESET}\n"
   else
     printf "${YELLOW}PNPM tools update failed${RESET}\n"
   fi
 
-  printf "${GREEN}Updating GO tools${RESET}\n"
+  printf "${BLUE}Updating GO tools${RESET}\n"
   if go-global-update >/dev/null 2>&1; then
     printf "${GREEN}GO tools updated${RESET}\n"
   else
     printf "${YELLOW}GO tools update failed${RESET}\n"
   fi
 
-  printf "${GREEN}_______________________________${RESET}\n"
+  printf "${BLUE}_______________________________${RESET}\n"
   printf "${GREEN}Update complete.${RESET}\n"
 }
 
