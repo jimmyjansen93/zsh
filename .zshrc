@@ -101,7 +101,7 @@ update() {
     fi
 
     printf "${BLUE}Brew cleanup...${RESET}\n"
-    if brew cleanup --prune=all -s >/dev/null 2>&1; then
+    if brew bundle cleanup --force && brew cleanup --prune=all -s >/dev/null 2>&1; then
       printf "${GREEN}brew cleanup completed${RESET}\n"
     else
       printf "${YELLOW}brew cleanup encountered issues${RESET}\n" >&2
