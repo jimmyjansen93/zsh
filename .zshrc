@@ -4,7 +4,10 @@ YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
 RESET='\033[0m'
 
+export XDG_CONFIG_HOME="$HOME/.config"
+
 export PATH="$PATH:/opt/homebrew/opt/rustup/bin"
+export PATH="$HOME/.nimble/bin:$PATH"
 
 export CXXFLAGS="-std=c++23"
 export PATH="$(brew --prefix llvm)/bin:$PATH"
