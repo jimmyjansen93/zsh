@@ -97,7 +97,7 @@ update() {
 
   if [[ -f $HOME/Brewfile ]]; then
     printf "${BLUE}Running brew bundle...${RESET}\n"
-    if (cd "$HOME" && brew bundle >/dev/null 2>&1); then
+    if (cd "$HOME" && brew bundle >/dev/null 2>&1 && brew bundle --upgrade --all >/dev/null 2>&1); then
       printf "${GREEN}brew bundle completed successfully${RESET}\n"
     else
       printf "${RED}brew bundle failed${RESET}\n" >&2
