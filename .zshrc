@@ -5,25 +5,24 @@ BLUE='\033[0;34m'
 RESET='\033[0m'
 
 export XDG_CONFIG_HOME="$HOME/.config"
+export PNPM_HOME="$HOME/Library/pnpm"
 
-export PATH="$PATH:/opt/homebrew/opt/rustup/bin"
-export PATH="$HOME/.nimble/bin:$PATH"
-
-export CXXFLAGS="-std=c++23"
-export PATH="$(brew --prefix llvm)/bin:$PATH"
+local path_dirs=(
+  "$HOME/.cargo/bin"
+  "$HOME/.nimble/bin"
+  "$(go env GOPATH)/bin"
+  "$PNPM_HOME"
+  "$HOME/.local/bin"
+  "$(brew --prefix llvm)/bin"
+)
+export PATH="${(j|:|)path_dirs}:$PATH"
+unset path_dirs
 
 eval "$(fnm env --use-on-cd --corepack-enabled --resolve-engines)"
 source <(fzf --zsh)
-export PATH="$PATH:$(go env GOPATH)/bin"
+
 export STARSHIP_CONFIG="$HOME/.config/starship/starship.toml"
 eval "$(starship init zsh)"
-
-export PNPM_HOME="$HOME/Library/pnpm"
-case ":$PATH:" in
-  *":$PNPM_HOME:"*) ;;
-  *) export PATH="$PNPM_HOME:$PATH" ;;
-esac
-
 export STARSHIP_LOG=error
 
 export HOMEBREW_NO_ENV_HINTS=true
