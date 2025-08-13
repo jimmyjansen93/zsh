@@ -46,7 +46,6 @@ alias ...='cd ../..'
 alias ....='cd ../../..'
 alias .....='cd ../../../..'
 alias -- -='cd -'
-alias reload='reload_zshrc'
 
 command -v zoxide  >/dev/null 2>&1 && eval "$(zoxide init zsh)"
 command -v thefuck >/dev/null 2>&1 && eval "$(thefuck --alias)"
@@ -89,81 +88,7 @@ brew() {
 }
 
 update() {
-  local repos=(nvim aerospace sketchybar tmux ghostty starship karabiner zsh btop emacs brewfile borders)
-  local config_dir="$HOME/.config"
-
-  if [[ -f $HOME/Brewfile ]]; then
-    printf "${BLUE}Running brew bundle...${RESET}\n"
-    if (cd "$HOME" && brew bundle >/dev/null 2>&1 && brew upgrade >/dev/null 2>&1); then
-      printf "${GREEN}brew bundle completed successfully${RESET}\n"
-    else
-      printf "${RED}brew bundle failed${RESET}\n" >&2
-    fi
-
-    printf "${BLUE}Brew cleanup...${RESET}\n"
-    if brew bundle cleanup --force && brew cleanup --prune=all -s >/dev/null 2>&1; then
-      printf "${GREEN}brew cleanup completed${RESET}\n"
-    else
-      printf "${YELLOW}brew cleanup encountered issues${RESET}\n" >&2
-    fi
-  fi
-
-  printf "${BLUE}Reloading zshrc${RESET}\n"
-  reload_zshrc
-
-  for repo in "${repos[@]}"; do
-    local dir="$config_dir/$repo"
-    [[ -d $dir/.git ]] || continue
-
-    (
-      cd "$dir" || return
-      if [[ -n $(git status --porcelain) ]]; then
-        git add -A >/dev/null 2>&1
-        git commit -m "chore: auto-update config" >/dev/null 2>&1 
-      fi
-
-      git fetch origin >/dev/null 2>&1
-      if git rebase origin/main >/dev/null 2>&1; then
-        printf "${BLUE}Pushing %s ...${RESET}\n" "$repo"
-        if git push origin HEAD:main >/dev/null 2>&1; then
-          printf "${GREEN}Updated %s (committed, rebased, and pushed)${RESET}\n" "$repo"
-        else
-          printf "${YELLOW}Push failed for %s${RESET}\n" "$repo" >&2
-        fi
-      else
-        printf "${YELLOW}[WARN] Rebase failed for %s, please resolve manually.${RESET}\n" "$repo" >&2
-      fi
-    )
-  done
-
-  printf "${BLUE}Updating PNPM tools${RESET}\n"
-  if pnpm update -g --latest >/dev/null 2>&1; then
-    printf "${GREEN}PNPM tools updated${RESET}\n"
-  else
-    printf "${YELLOW}PNPM tools update failed${RESET}\n"
-  fi
-
-  printf "${BLUE}Updating GO tools${RESET}\n"
-  if go-global-update >/dev/null 2>&1; then
-    printf "${GREEN}GO tools updated${RESET}\n"
-  else
-    printf "${YELLOW}GO tools update failed${RESET}\n"
-  fi
-
-  printf "${BLUE}_______________________________${RESET}\n"
-  printf "${GREEN}Update complete.${RESET}\n"
-}
-
-reload_zshrc() {
-  source ~/.zshrc
-  if command -v tmux >/dev/null 2>&1; then
-    tmux list-panes -F '#{pane_pid}' | xargs -r -n1 kill -USR1
-  fi
-  print -Pr '%F{green}[zshrc reloaded]%f'
-}
-
-TRAPUSR1() {
-  source ~/.zshrc
+  "$HOME/.config/zsh/bin/update" "$@"
 }
 
 # The next line updates PATH for the Google Cloud SDK.
