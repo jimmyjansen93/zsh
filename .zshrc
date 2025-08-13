@@ -1,8 +1,4 @@
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-YELLOW='\033[0;33m'
-BLUE='\033[0;34m'
-RESET='\033[0m'
+source "$HOME/.config/zsh/bin/colors"
 
 export XDG_CONFIG_HOME="$HOME/.config"
 export PNPM_HOME="$HOME/Library/pnpm"
@@ -51,41 +47,7 @@ command -v zoxide  >/dev/null 2>&1 && eval "$(zoxide init zsh)"
 command -v thefuck >/dev/null 2>&1 && eval "$(thefuck --alias)"
 command -v direnv  >/dev/null 2>&1 && eval "$(direnv hook zsh)"
 
-brew() {
-  if [[ $1 == bundle ]]; then
-    local cur_dir=$PWD
-    cd "$HOME" || return
-    shift
-    command brew bundle "$@"
-
-    local emacs_formula target dest needs_copy=1
-    emacs_formula=$(command brew list --formula | grep '^emacs-plus@' | sort -V | tail -n1)
-    if [[ -n $emacs_formula ]]; then
-      target="$(command brew --prefix "$emacs_formula")/Emacs.app"
-      dest="/Applications/Emacs.app"
-
-      if [[ -d $dest ]]; then
-        local old_sum new_sum
-        old_sum=$(md5 -q "$dest/Contents/MacOS/Emacs" 2>/dev/null || printf '%s' none)
-        new_sum=$(md5 -q "$target/Contents/MacOS/Emacs" 2>/dev/null || printf '%s' diff)
-        [[ $old_sum == $new_sum ]] && needs_copy=0
-      fi
-
-      if (( needs_copy )); then
-        sudo rm -rf "$dest"
-        if sudo cp -R "$target" "$dest"; then
-          /usr/bin/mdimport "$dest" >/dev/null 2>&1
-          printf "${GREEN}Emacs (%s) copied to /Applications${RESET}\n" "$emacs_formula"
-        else
-          printf "${RED}Failed to copy Emacs to /Applications${RESET}\n" >&2
-        fi
-      fi
-    fi
-    cd "$cur_dir" || return
-  else
-    command brew "$@"
-  fi
-}
+source "$HOME/.config/zsh/bin/brew-wrapper"
 
 update() {
   "$HOME/.config/zsh/bin/update" "$@"
