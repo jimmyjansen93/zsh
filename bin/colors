@@ -1,0 +1,188 @@
+#!/usr/bin/env bash
+
+# ANSI color codes
+typeset -A COLORS=(
+  ["black"]='\033[0;30m'
+  ["red"]='\033[0;31m'
+  ["green"]='\033[0;32m'
+  ["yellow"]='\033[0;33m'
+  ["blue"]='\033[0;34m'
+  ["magenta"]='\033[0;35m'
+  ["cyan"]='\033[0;36m'
+  ["white"]='\033[0;37m'
+  ["bright_black"]='\033[0;90m'
+  ["bright_red"]='\033[0;91m'
+  ["bright_green"]='\033[0;92m'
+  ["bright_yellow"]='\033[0;93m'
+  ["bright_blue"]='\033[0;94m'
+  ["bright_magenta"]='\033[0;95m'
+  ["bright_cyan"]='\033[0;96m'
+  ["bright_white"]='\033[0;97m'
+  ["bold"]='\033[1m'
+  ["dim"]='\033[2m'
+  ["italic"]='\033[3m'
+  ["underline"]='\033[4m'
+  ["blink"]='\033[5m'
+  ["reverse"]='\033[7m'
+  ["hidden"]='\033[8m'
+  ["strikethrough"]='\033[9m'
+  ["reset"]='\033[0m'
+)
+
+# Background colors
+typeset -A BG_COLORS=(
+  ["black"]='\033[40m'
+  ["red"]='\033[41m'
+  ["green"]='\033[42m'
+  ["yellow"]='\033[43m'
+  ["blue"]='\033[44m'
+  ["magenta"]='\033[45m'
+  ["cyan"]='\033[46m'
+  ["white"]='\033[47m'
+  ["bright_black"]='\033[100m'
+  ["bright_red"]='\033[101m'
+  ["bright_green"]='\033[102m'
+  ["bright_yellow"]='\033[103m'
+  ["bright_blue"]='\033[104m'
+  ["bright_magenta"]='\033[105m'
+  ["bright_cyan"]='\033[106m'
+  ["bright_white"]='\033[107m'
+)
+
+# Function to handle color commands
+colors() {
+  local cmd="$1"
+  shift
+  
+  case "$cmd" in
+    # Foreground colors
+    black|red|green|yellow|blue|magenta|cyan|white)
+      printf "%b%s%b" "${COLORS[$cmd]}" "$*" "${COLORS[reset]}"
+      ;;
+    bright_*)
+      printf "%b%s%b" "${COLORS[$cmd]}" "$*" "${COLORS[reset]}"
+      ;;
+    # Background colors
+    bg.*)
+      local bg_color="${cmd#bg.}"
+      printf "%b%s%b" "${BG_COLORS[$bg_color]}" "$*" "${COLORS[reset]}"
+      ;;
+    # Text styles
+    bold|dim|italic|underline|blink|reverse|hidden|strikethrough)
+      printf "%b%s%b" "${COLORS[$cmd]}" "$*" "${COLORS[reset]}"
+      ;;
+    # Special commands
+    reset)
+      printf "%b" "${COLORS[reset]}"
+      ;;
+    raw.*)
+      local color="${cmd#raw.}"
+      printf "%b" "${COLORS[$color]}"
+      ;;
+    bg.raw.*)
+      local bg_color="${cmd#bg.raw.}"
+      printf "%b" "${BG_COLORS[$bg_color]}"
+      ;;
+    list)
+      echo "Available colors:"
+      for color in black red green yellow blue magenta cyan white; do
+        colors "$color" "  $color"
+        echo
+      done
+      for color in bright_black bright_red bright_green bright_yellow bright_blue bright_magenta bright_cyan bright_white; do
+        colors "$color" "  $color"
+        echo
+      done
+      echo "Available styles:"
+      for style in bold dim italic underline blink reverse hidden strikethrough; do
+        colors "$style" "  $style"
+        echo
+      done
+      echo "Background colors: use bg.<color> (e.g., bg.red)"
+      echo "Raw codes: use raw.<color> or bg.raw.<color>"
+      ;;
+    help)
+      echo "Usage: colors <color|style> <text>"
+      echo "       colors raw.<color>  # outputs raw color code"
+      echo "       colors bg.<color> <text>  # background color"
+      echo "       colors list  # show all available colors"
+      echo ""
+      echo "Examples:"
+      echo '  colors green "Success!"'
+      echo '  colors bg.red "Error!"'
+      echo '  colors bold "Important"'
+      echo '  echo "$(colors raw.green)Green text$(colors reset)"'
+      echo ""
+      echo "In scripts, you can also use dot notation:"
+      echo '  colors.green "Success!"'
+      echo '  colors.bg.red "Error!"'
+      ;;
+    *)
+      echo "Unknown color/style: $cmd" >&2
+      echo "Use 'colors help' for usage information" >&2
+      return 1
+      ;;
+  esac
+}
+
+# Create convenient aliases for dot notation
+colors.black() { colors black "$@"; }
+colors.red() { colors red "$@"; }
+colors.green() { colors green "$@"; }
+colors.yellow() { colors yellow "$@"; }
+colors.blue() { colors blue "$@"; }
+colors.magenta() { colors magenta "$@"; }
+colors.cyan() { colors cyan "$@"; }
+colors.white() { colors white "$@"; }
+colors.bright_black() { colors bright_black "$@"; }
+colors.bright_red() { colors bright_red "$@"; }
+colors.bright_green() { colors bright_green "$@"; }
+colors.bright_yellow() { colors bright_yellow "$@"; }
+colors.bright_blue() { colors bright_blue "$@"; }
+colors.bright_magenta() { colors bright_magenta "$@"; }
+colors.bright_cyan() { colors bright_cyan "$@"; }
+colors.bright_white() { colors bright_white "$@"; }
+colors.bold() { colors bold "$@"; }
+colors.dim() { colors dim "$@"; }
+colors.italic() { colors italic "$@"; }
+colors.underline() { colors underline "$@"; }
+colors.blink() { colors blink "$@"; }
+colors.reverse() { colors reverse "$@"; }
+colors.hidden() { colors hidden "$@"; }
+colors.strikethrough() { colors strikethrough "$@"; }
+colors.reset() { colors reset; }
+colors.list() { colors list; }
+colors.help() { colors help; }
+
+# Background color aliases
+colors.bg.black() { colors bg.black "$@"; }
+colors.bg.red() { colors bg.red "$@"; }
+colors.bg.green() { colors bg.green "$@"; }
+colors.bg.yellow() { colors bg.yellow "$@"; }
+colors.bg.blue() { colors bg.blue "$@"; }
+colors.bg.magenta() { colors bg.magenta "$@"; }
+colors.bg.cyan() { colors bg.cyan "$@"; }
+colors.bg.white() { colors bg.white "$@"; }
+
+# Raw color code functions (for embedding in strings)
+colors.raw.black() { printf "%b" "${COLORS[black]}"; }
+colors.raw.red() { printf "%b" "${COLORS[red]}"; }
+colors.raw.green() { printf "%b" "${COLORS[green]}"; }
+colors.raw.yellow() { printf "%b" "${COLORS[yellow]}"; }
+colors.raw.blue() { printf "%b" "${COLORS[blue]}"; }
+colors.raw.magenta() { printf "%b" "${COLORS[magenta]}"; }
+colors.raw.cyan() { printf "%b" "${COLORS[cyan]}"; }
+colors.raw.white() { printf "%b" "${COLORS[white]}"; }
+colors.raw.reset() { printf "%b" "${COLORS[reset]}"; }
+
+# Export for backwards compatibility
+export GREEN="${COLORS[green]}"
+export RED="${COLORS[red]}"
+export YELLOW="${COLORS[yellow]}"
+export BLUE="${COLORS[blue]}"
+export RESET="${COLORS[reset]}"
+
+# If script is run directly, execute the colors function
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  colors "$@"
+fi

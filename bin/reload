@@ -1,0 +1,21 @@
+#!/bin/bash
+
+source "$HOME/.config/zsh/bin/colors"
+
+reload_zshrc() {
+  source ~/.zshrc
+  if command -v tmux >/dev/null 2>&1; then
+    tmux list-panes -F '#{pane_pid}' | xargs -r -n1 kill -USR1
+  fi
+  printf "${GREEN}[zshrc reloaded]${RESET}\n"
+}
+
+TRAPUSR1() {
+  source ~/.zshrc
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  reload_zshrc
+fi
+
+alias reload='reload_zshrc'

@@ -1,0 +1,144 @@
+#!/bin/bash
+
+source "$HOME/.config/zsh/bin/colors"
+
+CONFIG_DIR="$HOME/.config"
+
+run_brew_updates() {
+  if [[ -f $HOME/Brewfile ]]; then
+    colors.blue "Running brew bundle..."
+    echo
+    if (cd "$HOME" && brew bundle >/dev/null 2>&1 && brew upgrade >/dev/null 2>&1); then
+      colors.green "brew bundle completed successfully"
+      echo
+    else
+      colors.red "brew bundle failed" >&2
+      echo
+    fi
+
+    colors.blue "Brew cleanup..."
+    echo
+    if brew bundle cleanup --force && brew cleanup --prune=all -s >/dev/null 2>&1; then
+      colors.green "brew cleanup completed"
+      echo
+    else
+      colors.yellow "brew cleanup encountered issues" >&2
+      echo
+    fi
+  fi
+}
+
+
+update_git_repos() {
+  local repos_updated=0
+  local repos_failed=0
+  
+  colors.blue "Scanning for git repositories in $CONFIG_DIR..."
+  echo
+  
+  while IFS= read -r -d '' dir; do
+    repo_name=$(basename "$(dirname "$dir")")
+    
+    (
+      cd "$(dirname "$dir")" || return
+      
+      if [[ -n $(git status --porcelain 2>/dev/null) ]]; then
+        git add -A >/dev/null 2>&1
+        git commit -m "chore: auto-update config" >/dev/null 2>&1
+      fi
+      
+      git fetch origin >/dev/null 2>&1
+      
+      local current_branch
+      current_branch=$(git branch --show-current 2>/dev/null)
+      
+      if [[ -z $current_branch ]]; then
+        colors.yellow "[WARN] $repo_name is in detached HEAD state, skipping" >&2
+        echo
+        return
+      fi
+      
+      local remote_branch="origin/$current_branch"
+      if ! git show-ref --verify --quiet "refs/remotes/$remote_branch"; then
+        remote_branch="origin/main"
+        if ! git show-ref --verify --quiet "refs/remotes/$remote_branch"; then
+          remote_branch="origin/master"
+          if ! git show-ref --verify --quiet "refs/remotes/$remote_branch"; then
+            colors.yellow "[WARN] No suitable remote branch found for $repo_name, skipping" >&2
+            echo
+            return
+          fi
+        fi
+      fi
+      
+      if git rebase "$remote_branch" >/dev/null 2>&1; then
+        colors.blue "Pushing $repo_name ..."
+        echo
+        if git push origin "HEAD:${remote_branch#origin/}" >/dev/null 2>&1; then
+          colors.green "Updated $repo_name (committed, rebased, and pushed)"
+          echo
+          ((repos_updated++))
+        else
+          colors.yellow "Push failed for $repo_name" >&2
+          echo
+          ((repos_failed++))
+        fi
+      else
+        colors.yellow "[WARN] Rebase failed for $repo_name, please resolve manually." >&2
+        echo
+        git rebase --abort >/dev/null 2>&1
+        ((repos_failed++))
+      fi
+    )
+  done < <(find "$CONFIG_DIR" -maxdepth 2 -type d -name ".git" -print0 2>/dev/null)
+  
+  colors.blue "Git repos summary: $repos_updated updated, $repos_failed failed"
+  echo
+}
+
+update_package_managers() {
+  colors.blue "Updating PNPM tools"
+  echo
+  if pnpm update -g --latest >/dev/null 2>&1; then
+    colors.green "PNPM tools updated"
+    echo
+  else
+    colors.yellow "PNPM tools update failed"
+    echo
+  fi
+
+  colors.blue "Updating GO tools"
+  echo
+  if go-global-update >/dev/null 2>&1; then
+    colors.green "GO tools updated"
+    echo
+  else
+    colors.yellow "GO tools update failed"
+    echo
+  fi
+}
+
+main() {
+  colors.blue "Starting system update..."
+  echo
+  colors.blue "_______________________________"
+  echo
+  echo
+  
+  run_brew_updates
+  
+  colors.blue "Reloading zshrc"
+  echo
+  "$HOME/.config/zsh/bin/reload"
+  
+  update_git_repos
+  
+  update_package_managers
+  
+  colors.blue "_______________________________"
+  echo
+  colors.green "Update complete."
+  echo
+}
+
+main "$@"

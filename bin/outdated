@@ -1,0 +1,74 @@
+#!/bin/bash
+
+source "$HOME/.config/zsh/bin/colors"
+
+COPY_TO_CLIPBOARD=false
+while [[ $# -gt 0 ]]; do
+  case $1 in
+  -c | --copy)
+    COPY_TO_CLIPBOARD=true
+    shift
+    ;;
+  *)
+    echo "Usage: $0 [-c|--copy]"
+    echo "  -c, --copy    Copy output to clipboard"
+    exit 1
+    ;;
+  esac
+done
+
+FILTERED_APPS=("spotify")
+
+outdated_output=$(brew outdated 2>&1 | grep -v "Checking if we need to fetch\|Fetching\|Updating\|branch.*set up to track\|Current branch.*is up to date\|Updated.*\.json\|==> Auto-updating Homebrew\|==> Auto-updated Homebrew\|Updated.*taps\|Updated.*tap\|==> New Formulae\|==> New Casks\|You have.*outdated.*installed\|^$")
+
+if [ -z "$outdated_output" ]; then
+  message="✅ All Homebrew packages are up to date!"
+  echo "$message"
+  if [ "$COPY_TO_CLIPBOARD" = true ]; then
+    echo "$message" | pbcopy
+  fi
+  exit 0
+fi
+
+filtered_packages=()
+while IFS= read -r line; do
+  package=$(echo "$line" | awk '{print $1}')
+
+  should_filter=false
+  for filtered_app in "${FILTERED_APPS[@]}"; do
+    if [[ "$package" == *"$filtered_app"* ]]; then
+      should_filter=true
+      break
+    fi
+  done
+
+  if [ "$should_filter" = false ]; then
+    filtered_packages+=("$line")
+  fi
+done <<<"$outdated_output"
+
+if [ ${#filtered_packages[@]} -eq 0 ]; then
+  message="✅ All relevant Homebrew packages are up to date (filtered packages excluded)!"
+  echo "$message"
+  if [ "$COPY_TO_CLIPBOARD" = true ]; then
+    echo "$message" | pbcopy
+  fi
+else
+  message="Dear Admin,
+
+The following Homebrew packages are outdated and need updating:
+"
+  for package_line in "${filtered_packages[@]}"; do
+    message+="  • $package_line"$'\n'
+  done
+
+  message+="
+I would like to run 'brew upgrade' but need admin permissions.
+
+Thank you!"
+
+  echo "$message"
+  if [ "$COPY_TO_CLIPBOARD" = true ]; then
+    echo "$message" | pbcopy
+  fi
+fi
