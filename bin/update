@@ -30,17 +30,20 @@ run_brew_updates() {
 
 
 update_git_repos() {
-  local repos_updated=0
-  local repos_failed=0
+  local -a pids=()
+  local -a repo_names=()
+  local temp_dir
+  temp_dir=$(mktemp -d)
   
   colors.blue "Scanning for git repositories in $CONFIG_DIR..."
   echo
   
   while IFS= read -r -d '' dir; do
     repo_name=$(basename "$(dirname "$dir")")
+    repo_names+=("$repo_name")
     
     (
-      cd "$(dirname "$dir")" || return
+      cd "$(dirname "$dir")" || exit 1
       
       if [[ -n $(git status --porcelain 2>/dev/null) ]]; then
         git add -A >/dev/null 2>&1
@@ -53,9 +56,8 @@ update_git_repos() {
       current_branch=$(git branch --show-current 2>/dev/null)
       
       if [[ -z $current_branch ]]; then
-        colors.yellow "[WARN] $repo_name is in detached HEAD state, skipping" >&2
-        echo
-        return
+        echo "WARN: $repo_name is in detached HEAD state, skipping" > "$temp_dir/$repo_name.log"
+        exit 2
       fi
       
       local remote_branch="origin/$current_branch"
@@ -64,35 +66,66 @@ update_git_repos() {
         if ! git show-ref --verify --quiet "refs/remotes/$remote_branch"; then
           remote_branch="origin/master"
           if ! git show-ref --verify --quiet "refs/remotes/$remote_branch"; then
-            colors.yellow "[WARN] No suitable remote branch found for $repo_name, skipping" >&2
-            echo
-            return
+            echo "WARN: No suitable remote branch found for $repo_name, skipping" > "$temp_dir/$repo_name.log"
+            exit 2
           fi
         fi
       fi
       
       if git rebase "$remote_branch" >/dev/null 2>&1; then
-        colors.blue "Pushing $repo_name ..."
-        echo
         if git push origin "HEAD:${remote_branch#origin/}" >/dev/null 2>&1; then
-          colors.green "Updated $repo_name (committed, rebased, and pushed)"
-          echo
-          ((repos_updated++))
+          echo "SUCCESS: Updated $repo_name (committed, rebased, and pushed)" > "$temp_dir/$repo_name.log"
+          exit 0
         else
-          colors.yellow "Push failed for $repo_name" >&2
-          echo
-          ((repos_failed++))
+          echo "FAIL: Push failed for $repo_name" > "$temp_dir/$repo_name.log"
+          exit 1
         fi
       else
-        colors.yellow "[WARN] Rebase failed for $repo_name, please resolve manually." >&2
-        echo
         git rebase --abort >/dev/null 2>&1
-        ((repos_failed++))
+        echo "FAIL: Rebase failed for $repo_name, please resolve manually" > "$temp_dir/$repo_name.log"
+        exit 1
       fi
-    )
+    ) & 
+    pids+=("$!")
   done < <(find "$CONFIG_DIR" -maxdepth 2 -type d -name ".git" -print0 2>/dev/null)
   
-  colors.blue "Git repos summary: $repos_updated updated, $repos_failed failed"
+  # Wait for all background jobs and collect results
+  local repos_updated=0
+  local repos_failed=0
+  local repos_skipped=0
+  
+  for i in "${!pids[@]}"; do
+    wait "${pids[$i]}"
+    local exit_code=$?
+    local repo_name="${repo_names[$i]}"
+    
+    if [[ -f "$temp_dir/$repo_name.log" ]]; then
+      local log_content
+      log_content=$(<"$temp_dir/$repo_name.log")
+      
+      case "$log_content" in
+        SUCCESS:*)
+          colors.green "${log_content#SUCCESS: }"
+          echo
+          ((repos_updated++))
+          ;;
+        FAIL:*)
+          colors.yellow "${log_content#FAIL: }" >&2
+          echo
+          ((repos_failed++))
+          ;;
+        WARN:*)
+          colors.yellow "[${log_content#WARN: }]" >&2
+          echo
+          ((repos_skipped++))
+          ;;
+      esac
+    fi
+  done
+  
+  rm -rf "$temp_dir"
+  
+  colors.blue "Git repos summary: $repos_updated updated, $repos_failed failed, $repos_skipped skipped"
   echo
 }
 

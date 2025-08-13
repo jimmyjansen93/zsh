@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # ANSI color codes
-typeset -A COLORS=(
+declare -A COLORS=(
   ["black"]='\033[0;30m'
   ["red"]='\033[0;31m'
   ["green"]='\033[0;32m'
@@ -30,7 +30,7 @@ typeset -A COLORS=(
 )
 
 # Background colors
-typeset -A BG_COLORS=(
+declare -A BG_COLORS=(
   ["black"]='\033[40m'
   ["red"]='\033[41m'
   ["green"]='\033[42m'
