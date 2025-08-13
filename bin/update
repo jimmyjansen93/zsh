@@ -6,23 +6,23 @@ CONFIG_DIR="$HOME/.config"
 
 run_brew_updates() {
   if [[ -f $HOME/Brewfile ]]; then
-    colors.blue "Running brew bundle..."
+    colors blue "Running brew bundle..."
     echo
     if (cd "$HOME" && brew bundle >/dev/null 2>&1 && brew upgrade >/dev/null 2>&1); then
-      colors.green "brew bundle completed successfully"
+      colors green "brew bundle completed successfully"
       echo
     else
-      colors.red "brew bundle failed" >&2
+      colors red "brew bundle failed" >&2
       echo
     fi
 
-    colors.blue "Brew cleanup..."
+    colors blue "Brew cleanup..."
     echo
     if brew bundle cleanup --force && brew cleanup --prune=all -s >/dev/null 2>&1; then
-      colors.green "brew cleanup completed"
+      colors green "brew cleanup completed"
       echo
     else
-      colors.yellow "brew cleanup encountered issues" >&2
+      colors yellow "brew cleanup encountered issues" >&2
       echo
     fi
   fi
@@ -35,7 +35,7 @@ update_git_repos() {
   local temp_dir
   temp_dir=$(mktemp -d)
   
-  colors.blue "Scanning for git repositories in $CONFIG_DIR..."
+  colors blue "Scanning for git repositories in $CONFIG_DIR..."
   echo
   
   while IFS= read -r -d '' dir; do
@@ -105,17 +105,17 @@ update_git_repos() {
       
       case "$log_content" in
         SUCCESS:*)
-          colors.green "${log_content#SUCCESS: }"
+          colors green "${log_content#SUCCESS: }"
           echo
           ((repos_updated++))
           ;;
         FAIL:*)
-          colors.yellow "${log_content#FAIL: }" >&2
+          colors yellow "${log_content#FAIL: }" >&2
           echo
           ((repos_failed++))
           ;;
         WARN:*)
-          colors.yellow "[${log_content#WARN: }]" >&2
+          colors yellow "[${log_content#WARN: }]" >&2
           echo
           ((repos_skipped++))
           ;;
@@ -125,28 +125,28 @@ update_git_repos() {
   
   rm -rf "$temp_dir"
   
-  colors.blue "Git repos summary: $repos_updated updated, $repos_failed failed, $repos_skipped skipped"
+  colors blue "Git repos summary: $repos_updated updated, $repos_failed failed, $repos_skipped skipped"
   echo
 }
 
 update_package_managers() {
-  colors.blue "Updating PNPM tools"
+  colors blue "Updating PNPM tools"
   echo
   if pnpm update -g --latest >/dev/null 2>&1; then
-    colors.green "PNPM tools updated"
+    colors green "PNPM tools updated"
     echo
   else
-    colors.yellow "PNPM tools update failed"
+    colors yellow "PNPM tools update failed"
     echo
   fi
 
-  colors.blue "Updating GO tools"
+  colors blue "Updating GO tools"
   echo
   if go-global-update >/dev/null 2>&1; then
-    colors.green "GO tools updated"
+    colors green "GO tools updated"
     echo
   else
-    colors.yellow "GO tools update failed"
+    colors yellow "GO tools update failed"
     echo
   fi
 }
@@ -185,7 +185,7 @@ main() {
         exit 0
         ;;
       *)
-        colors.red "Unknown option: $1"
+        colors red "Unknown option: $1"
         echo
         show_help
         exit 1
@@ -194,42 +194,42 @@ main() {
   done
   
   if [[ $git_only == true && $brew_only == true ]]; then
-    colors.red "Cannot use both --git-only and --brew-only flags together"
+    colors red "Cannot use both --git-only and --brew-only flags together"
     echo
     show_help
     exit 1
   fi
   
   if [[ $git_only == true ]]; then
-    colors.blue "Starting git-only update..."
+    colors blue "Starting git-only update..."
     echo
-    colors.blue "_______________________________"
+    colors blue "_______________________________"
     echo
     echo
     
     update_git_repos
   elif [[ $brew_only == true ]]; then
-    colors.blue "Starting brew-only update..."
+    colors blue "Starting brew-only update..."
     echo
-    colors.blue "_______________________________"
+    colors blue "_______________________________"
     echo
     echo
     
     run_brew_updates
     
-    colors.blue "Reloading zshrc"
+    colors blue "Reloading zshrc"
     echo
     "$HOME/.config/zsh/bin/reload"
   else
-    colors.blue "Starting system update..."
+    colors blue "Starting system update..."
     echo
-    colors.blue "_______________________________"
+    colors blue "_______________________________"
     echo
     echo
     
     run_brew_updates
     
-    colors.blue "Reloading zshrc"
+    colors blue "Reloading zshrc"
     echo
     "$HOME/.config/zsh/bin/reload"
     
@@ -238,9 +238,9 @@ main() {
     update_package_managers
   fi
   
-  colors.blue "_______________________________"
+  colors blue "_______________________________"
   echo
-  colors.green "Update complete."
+  colors green "Update complete."
   echo
 }
 

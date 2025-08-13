@@ -4,24 +4,32 @@ export XDG_CONFIG_HOME="$HOME/.config"
 export PNPM_HOME="$HOME/Library/pnpm"
 export TEALDEER_CONFIG_DIR="$HOME/.config/tealdeer"
 
-local path_dirs=(
-  "$HOME/.cargo/bin"
-  "$HOME/.nimble/bin"
-  "$(go env GOPATH)/bin"
-  "$PNPM_HOME"
-  "$HOME/.local/bin"
-  "$(brew --prefix llvm)/bin"
-  "$HOME/.bun/bin"
-)
-export PATH="${(j|:|)path_dirs}:$PATH"
+if [ -n "$ZSH_VERSION" ]; then
+  local path_dirs=(
+    "$HOME/.cargo/bin"
+    "$HOME/.nimble/bin"
+    "$(go env GOPATH)/bin"
+    "$PNPM_HOME"
+    "$HOME/.local/bin"
+    "$(brew --prefix llvm)/bin"
+    "$HOME/.bun/bin"
+  )
+  export PATH="${(j|:|)path_dirs}:$PATH"
+else
+  export PATH="$HOME/.cargo/bin:$HOME/.nimble/bin:$(go env GOPATH)/bin:$PNPM_HOME:$HOME/.local/bin:$(brew --prefix llvm)/bin:$HOME/.bun/bin:$PATH"
+fi
 export BUN_INSTALL="$HOME/.bun"
 unset path_dirs
 
 eval "$(fnm env --use-on-cd --corepack-enabled --resolve-engines)"
-source <(fzf --zsh)
+[ -n "$ZSH_VERSION" ] && source <(fzf --zsh)
 
 export STARSHIP_CONFIG="$HOME/.config/starship/starship.toml"
-eval "$(starship init zsh)"
+if [ -n "$ZSH_VERSION" ]; then
+  eval "$(starship init zsh)"
+elif [ -n "$BASH_VERSION" ]; then
+  eval "$(starship init bash)"
+fi
 export STARSHIP_LOG=error
 
 export HOMEBREW_NO_ENV_HINTS=true
@@ -45,7 +53,13 @@ alias ....='cd ../../..'
 alias .....='cd ../../../..'
 alias -- -='cd -'
 
-command -v zoxide  >/dev/null 2>&1 && eval "$(zoxide init zsh)"
+if command -v zoxide >/dev/null 2>&1; then
+  if [ -n "$ZSH_VERSION" ]; then
+    eval "$(zoxide init zsh)"
+  elif [ -n "$BASH_VERSION" ]; then
+    eval "$(zoxide init bash)"
+  fi
+fi
 
 thefuck_lazy() {
   if command -v thefuck >/dev/null 2>&1; then
@@ -57,12 +71,16 @@ thefuck_lazy() {
 alias fuck='thefuck_lazy'
 
 if command -v direnv >/dev/null 2>&1; then
-  _direnv_hook() {
-    eval "$(direnv export zsh 2>/dev/null)"
-  }
-  typeset -ag precmd_functions
-  if [[ -z ${precmd_functions[(r)_direnv_hook]} ]]; then
-    precmd_functions+=(_direnv_hook)
+  if [ -n "$ZSH_VERSION" ]; then
+    _direnv_hook() {
+      eval "$(direnv export zsh 2>/dev/null)"
+    }
+    typeset -ag precmd_functions
+    if [[ -z ${precmd_functions[(r)_direnv_hook]} ]]; then
+      precmd_functions+=(_direnv_hook)
+    fi
+  elif [ -n "$BASH_VERSION" ]; then
+    eval "$(direnv hook bash)"
   fi
 fi
 
@@ -78,9 +96,11 @@ if [ -f '/opt/homebrew/share/google-cloud-sdk/path.zsh.inc' ]; then . '/opt/home
 # The next line enables shell command completion for gcloud.
 if [ -f '/opt/homebrew/share/google-cloud-sdk/completion.zsh.inc' ]; then . '/opt/homebrew/share/google-cloud-sdk/completion.zsh.inc'; fi
 # The following lines have been added by Docker Desktop to enable Docker CLI completions.
-fpath=(/Users/jimmyjansen/.docker/completions $fpath)
-autoload -Uz compinit
-compinit
+if [ -n "$ZSH_VERSION" ]; then
+  fpath=(/Users/jimmyjansen/.docker/completions $fpath)
+  autoload -Uz compinit
+  compinit
+fi
 # End of Docker CLI completions
 
 # bun completions

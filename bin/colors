@@ -1,154 +1,136 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
-# Check bash version for associative array support
-if [[ ${BASH_VERSION%%.*} -lt 4 ]]; then
-  # Fallback for older bash versions (macOS default)
-  # Define colors as individual variables
-  COLOR_black=$'\033[0;30m'
-  COLOR_red=$'\033[0;31m'
-  COLOR_green=$'\033[0;32m'
-  COLOR_yellow=$'\033[0;33m'
-  COLOR_blue=$'\033[0;34m'
-  COLOR_magenta=$'\033[0;35m'
-  COLOR_cyan=$'\033[0;36m'
-  COLOR_white=$'\033[0;37m'
-  COLOR_bright_black=$'\033[0;90m'
-  COLOR_bright_red=$'\033[0;91m'
-  COLOR_bright_green=$'\033[0;92m'
-  COLOR_bright_yellow=$'\033[0;93m'
-  COLOR_bright_blue=$'\033[0;94m'
-  COLOR_bright_magenta=$'\033[0;95m'
-  COLOR_bright_cyan=$'\033[0;96m'
-  COLOR_bright_white=$'\033[0;97m'
-  COLOR_bold=$'\033[1m'
-  COLOR_dim=$'\033[2m'
-  COLOR_italic=$'\033[3m'
-  COLOR_underline=$'\033[4m'
-  COLOR_blink=$'\033[5m'
-  COLOR_reverse=$'\033[7m'
-  COLOR_hidden=$'\033[8m'
-  COLOR_strikethrough=$'\033[9m'
-  COLOR_reset=$'\033[0m'
-  
-  BG_COLOR_black=$'\033[40m'
-  BG_COLOR_red=$'\033[41m'
-  BG_COLOR_green=$'\033[42m'
-  BG_COLOR_yellow=$'\033[43m'
-  BG_COLOR_blue=$'\033[44m'
-  BG_COLOR_magenta=$'\033[45m'
-  BG_COLOR_cyan=$'\033[46m'
-  BG_COLOR_white=$'\033[47m'
-  BG_COLOR_bright_black=$'\033[100m'
-  BG_COLOR_bright_red=$'\033[101m'
-  BG_COLOR_bright_green=$'\033[102m'
-  BG_COLOR_bright_yellow=$'\033[103m'
-  BG_COLOR_bright_blue=$'\033[104m'
-  BG_COLOR_bright_magenta=$'\033[105m'
-  BG_COLOR_bright_cyan=$'\033[106m'
-  BG_COLOR_bright_white=$'\033[107m'
-  
-  # Helper function to get color by name
-  get_color() {
-    local var_name="COLOR_$1"
-    echo "${!var_name}"
-  }
-  
-  get_bg_color() {
-    local var_name="BG_COLOR_$1"
-    echo "${!var_name}"
-  }
-else
-  # ANSI color codes
-  declare -A COLORS=(
-  ["black"]='\033[0;30m'
-  ["red"]='\033[0;31m'
-  ["green"]='\033[0;32m'
-  ["yellow"]='\033[0;33m'
-  ["blue"]='\033[0;34m'
-  ["magenta"]='\033[0;35m'
-  ["cyan"]='\033[0;36m'
-  ["white"]='\033[0;37m'
-  ["bright_black"]='\033[0;90m'
-  ["bright_red"]='\033[0;91m'
-  ["bright_green"]='\033[0;92m'
-  ["bright_yellow"]='\033[0;93m'
-  ["bright_blue"]='\033[0;94m'
-  ["bright_magenta"]='\033[0;95m'
-  ["bright_cyan"]='\033[0;96m'
-  ["bright_white"]='\033[0;97m'
-  ["bold"]='\033[1m'
-  ["dim"]='\033[2m'
-  ["italic"]='\033[3m'
-  ["underline"]='\033[4m'
-  ["blink"]='\033[5m'
-  ["reverse"]='\033[7m'
-  ["hidden"]='\033[8m'
-  ["strikethrough"]='\033[9m'
-  ["reset"]='\033[0m'
-)
+# Universal color definitions using printf
+COLOR_black=$(printf '\033[0;30m')
+COLOR_red=$(printf '\033[0;31m')
+COLOR_green=$(printf '\033[0;32m')
+COLOR_yellow=$(printf '\033[0;33m')
+COLOR_blue=$(printf '\033[0;34m')
+COLOR_magenta=$(printf '\033[0;35m')
+COLOR_cyan=$(printf '\033[0;36m')
+COLOR_white=$(printf '\033[0;37m')
+COLOR_bright_black=$(printf '\033[0;90m')
+COLOR_bright_red=$(printf '\033[0;91m')
+COLOR_bright_green=$(printf '\033[0;92m')
+COLOR_bright_yellow=$(printf '\033[0;93m')
+COLOR_bright_blue=$(printf '\033[0;94m')
+COLOR_bright_magenta=$(printf '\033[0;95m')
+COLOR_bright_cyan=$(printf '\033[0;96m')
+COLOR_bright_white=$(printf '\033[0;97m')
+COLOR_bold=$(printf '\033[1m')
+COLOR_dim=$(printf '\033[2m')
+COLOR_italic=$(printf '\033[3m')
+COLOR_underline=$(printf '\033[4m')
+COLOR_blink=$(printf '\033[5m')
+COLOR_reverse=$(printf '\033[7m')
+COLOR_hidden=$(printf '\033[8m')
+COLOR_strikethrough=$(printf '\033[9m')
+COLOR_reset=$(printf '\033[0m')
 
-  # Background colors
-  declare -A BG_COLORS=(
-  ["black"]='\033[40m'
-  ["red"]='\033[41m'
-  ["green"]='\033[42m'
-  ["yellow"]='\033[43m'
-  ["blue"]='\033[44m'
-  ["magenta"]='\033[45m'
-  ["cyan"]='\033[46m'
-  ["white"]='\033[47m'
-  ["bright_black"]='\033[100m'
-  ["bright_red"]='\033[101m'
-  ["bright_green"]='\033[102m'
-  ["bright_yellow"]='\033[103m'
-  ["bright_blue"]='\033[104m'
-  ["bright_magenta"]='\033[105m'
-  ["bright_cyan"]='\033[106m'
-  ["bright_white"]='\033[107m'
-  )
-  
-  get_color() {
-    echo "${COLORS[$1]}"
-  }
-  
-  get_bg_color() {
-    echo "${BG_COLORS[$1]}"
-  }
-fi
+BG_COLOR_black=$(printf '\033[40m')
+BG_COLOR_red=$(printf '\033[41m')
+BG_COLOR_green=$(printf '\033[42m')
+BG_COLOR_yellow=$(printf '\033[43m')
+BG_COLOR_blue=$(printf '\033[44m')
+BG_COLOR_magenta=$(printf '\033[45m')
+BG_COLOR_cyan=$(printf '\033[46m')
+BG_COLOR_white=$(printf '\033[47m')
+BG_COLOR_bright_black=$(printf '\033[100m')
+BG_COLOR_bright_red=$(printf '\033[101m')
+BG_COLOR_bright_green=$(printf '\033[102m')
+BG_COLOR_bright_yellow=$(printf '\033[103m')
+BG_COLOR_bright_blue=$(printf '\033[104m')
+BG_COLOR_bright_magenta=$(printf '\033[105m')
+BG_COLOR_bright_cyan=$(printf '\033[106m')
+BG_COLOR_bright_white=$(printf '\033[107m')
 
-# Function to handle color commands
+# Helper functions that work in all shells
+get_color() {
+  case "$1" in
+    black) echo "$COLOR_black" ;;
+    red) echo "$COLOR_red" ;;
+    green) echo "$COLOR_green" ;;
+    yellow) echo "$COLOR_yellow" ;;
+    blue) echo "$COLOR_blue" ;;
+    magenta) echo "$COLOR_magenta" ;;
+    cyan) echo "$COLOR_cyan" ;;
+    white) echo "$COLOR_white" ;;
+    bright_black) echo "$COLOR_bright_black" ;;
+    bright_red) echo "$COLOR_bright_red" ;;
+    bright_green) echo "$COLOR_bright_green" ;;
+    bright_yellow) echo "$COLOR_bright_yellow" ;;
+    bright_blue) echo "$COLOR_bright_blue" ;;
+    bright_magenta) echo "$COLOR_bright_magenta" ;;
+    bright_cyan) echo "$COLOR_bright_cyan" ;;
+    bright_white) echo "$COLOR_bright_white" ;;
+    bold) echo "$COLOR_bold" ;;
+    dim) echo "$COLOR_dim" ;;
+    italic) echo "$COLOR_italic" ;;
+    underline) echo "$COLOR_underline" ;;
+    blink) echo "$COLOR_blink" ;;
+    reverse) echo "$COLOR_reverse" ;;
+    hidden) echo "$COLOR_hidden" ;;
+    strikethrough) echo "$COLOR_strikethrough" ;;
+    reset) echo "$COLOR_reset" ;;
+    *) echo "" ;;
+  esac
+}
+
+get_bg_color() {
+  case "$1" in
+    black) echo "$BG_COLOR_black" ;;
+    red) echo "$BG_COLOR_red" ;;
+    green) echo "$BG_COLOR_green" ;;
+    yellow) echo "$BG_COLOR_yellow" ;;
+    blue) echo "$BG_COLOR_blue" ;;
+    magenta) echo "$BG_COLOR_magenta" ;;
+    cyan) echo "$BG_COLOR_cyan" ;;
+    white) echo "$BG_COLOR_white" ;;
+    bright_black) echo "$BG_COLOR_bright_black" ;;
+    bright_red) echo "$BG_COLOR_bright_red" ;;
+    bright_green) echo "$BG_COLOR_bright_green" ;;
+    bright_yellow) echo "$BG_COLOR_bright_yellow" ;;
+    bright_blue) echo "$BG_COLOR_bright_blue" ;;
+    bright_magenta) echo "$BG_COLOR_bright_magenta" ;;
+    bright_cyan) echo "$BG_COLOR_bright_cyan" ;;
+    bright_white) echo "$BG_COLOR_bright_white" ;;
+    *) echo "" ;;
+  esac
+}
+
+# Main colors function
 colors() {
   local cmd="$1"
-  shift
+  [ $# -gt 0 ] && shift
   
   case "$cmd" in
     # Foreground colors
     black|red|green|yellow|blue|magenta|cyan|white)
-      printf "%b%s%b" "$(get_color "$cmd")" "$*" "$(get_color reset)"
+      printf "%s%s%s" "$(get_color "$cmd")" "$*" "$(get_color reset)"
       ;;
     bright_*)
-      printf "%b%s%b" "$(get_color "$cmd")" "$*" "$(get_color reset)"
+      printf "%s%s%s" "$(get_color "$cmd")" "$*" "$(get_color reset)"
       ;;
     # Background colors
     bg.*)
       local bg_color="${cmd#bg.}"
-      printf "%b%s%b" "$(get_bg_color "$bg_color")" "$*" "$(get_color reset)"
+      printf "%s%s%s" "$(get_bg_color "$bg_color")" "$*" "$(get_color reset)"
       ;;
     # Text styles
     bold|dim|italic|underline|blink|reverse|hidden|strikethrough)
-      printf "%b%s%b" "$(get_color "$cmd")" "$*" "$(get_color reset)"
+      printf "%s%s%s" "$(get_color "$cmd")" "$*" "$(get_color reset)"
       ;;
     # Special commands
     reset)
-      printf "%b" "$(get_color reset)"
+      printf "%s" "$(get_color reset)"
       ;;
     raw.*)
       local color="${cmd#raw.}"
-      printf "%b" "$(get_color "$color")"
+      printf "%s" "$(get_color "$color")"
       ;;
     bg.raw.*)
       local bg_color="${cmd#bg.raw.}"
-      printf "%b" "$(get_bg_color "$bg_color")"
+      printf "%s" "$(get_bg_color "$bg_color")"
       ;;
     list)
       echo "Available colors:"
@@ -179,68 +161,14 @@ colors() {
       echo '  colors bg.red "Error!"'
       echo '  colors bold "Important"'
       echo '  echo "$(colors raw.green)Green text$(colors reset)"'
-      echo ""
-      echo "In scripts, you can also use dot notation:"
-      echo '  colors.green "Success!"'
-      echo '  colors.bg.red "Error!"'
       ;;
     *)
-      echo "Unknown color/style: $cmd" >&2
-      echo "Use 'colors help' for usage information" >&2
-      return 1
+      [ -n "$cmd" ] && echo "Unknown color/style: $cmd" >&2
+      [ -n "$cmd" ] && echo "Use 'colors help' for usage information" >&2
+      [ -n "$cmd" ] && return 1
       ;;
   esac
 }
-
-# Create convenient aliases for dot notation
-colors.black() { colors black "$@"; }
-colors.red() { colors red "$@"; }
-colors.green() { colors green "$@"; }
-colors.yellow() { colors yellow "$@"; }
-colors.blue() { colors blue "$@"; }
-colors.magenta() { colors magenta "$@"; }
-colors.cyan() { colors cyan "$@"; }
-colors.white() { colors white "$@"; }
-colors.bright_black() { colors bright_black "$@"; }
-colors.bright_red() { colors bright_red "$@"; }
-colors.bright_green() { colors bright_green "$@"; }
-colors.bright_yellow() { colors bright_yellow "$@"; }
-colors.bright_blue() { colors bright_blue "$@"; }
-colors.bright_magenta() { colors bright_magenta "$@"; }
-colors.bright_cyan() { colors bright_cyan "$@"; }
-colors.bright_white() { colors bright_white "$@"; }
-colors.bold() { colors bold "$@"; }
-colors.dim() { colors dim "$@"; }
-colors.italic() { colors italic "$@"; }
-colors.underline() { colors underline "$@"; }
-colors.blink() { colors blink "$@"; }
-colors.reverse() { colors reverse "$@"; }
-colors.hidden() { colors hidden "$@"; }
-colors.strikethrough() { colors strikethrough "$@"; }
-colors.reset() { colors reset; }
-colors.list() { colors list; }
-colors.help() { colors help; }
-
-# Background color aliases
-colors.bg.black() { colors bg.black "$@"; }
-colors.bg.red() { colors bg.red "$@"; }
-colors.bg.green() { colors bg.green "$@"; }
-colors.bg.yellow() { colors bg.yellow "$@"; }
-colors.bg.blue() { colors bg.blue "$@"; }
-colors.bg.magenta() { colors bg.magenta "$@"; }
-colors.bg.cyan() { colors bg.cyan "$@"; }
-colors.bg.white() { colors bg.white "$@"; }
-
-# Raw color code functions (for embedding in strings)
-colors.raw.black() { printf "%b" "$(get_color black)"; }
-colors.raw.red() { printf "%b" "$(get_color red)"; }
-colors.raw.green() { printf "%b" "$(get_color green)"; }
-colors.raw.yellow() { printf "%b" "$(get_color yellow)"; }
-colors.raw.blue() { printf "%b" "$(get_color blue)"; }
-colors.raw.magenta() { printf "%b" "$(get_color magenta)"; }
-colors.raw.cyan() { printf "%b" "$(get_color cyan)"; }
-colors.raw.white() { printf "%b" "$(get_color white)"; }
-colors.raw.reset() { printf "%b" "$(get_color reset)"; }
 
 # Export for backwards compatibility
 export GREEN="$(get_color green)"
@@ -250,6 +178,8 @@ export BLUE="$(get_color blue)"
 export RESET="$(get_color reset)"
 
 # If script is run directly, execute the colors function
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  colors "$@"
-fi
+case "$0" in
+  *colors)
+    colors "$@"
+    ;;
+esac
