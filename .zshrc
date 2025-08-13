@@ -6,6 +6,7 @@ RESET='\033[0m'
 
 export XDG_CONFIG_HOME="$HOME/.config"
 export PNPM_HOME="$HOME/Library/pnpm"
+export TEALDEER_CONFIG_DIR="$HOME/.config/tealdeer"
 
 local path_dirs=(
   "$HOME/.cargo/bin"
@@ -27,7 +28,7 @@ export STARSHIP_LOG=error
 
 export HOMEBREW_NO_ENV_HINTS=true
 export HOMEBREW_MAKE_JOBS=$(sysctl -n hw.ncpu)
-export HOMEBREW_VERBOSE=true
+export HOMEBREW_VERBOSE=
 export HOMEBREW_AUTO_UPDATE_SECS=3600
 export HOMEBREW_BAT=true
 export HOMEBREW_CLEANUP_MAX_AGE_DAYS=30
@@ -38,8 +39,6 @@ alias ll='lsd -l'
 alias la='lsd -la'
 alias l='lsd'
 alias ls='lsd'
-alias cat='bat'
-alias grep='rg'
 alias vi='nvim'
 alias vim='nvim'
 alias ..='cd ..'
@@ -166,3 +165,21 @@ reload_zshrc() {
 TRAPUSR1() {
   source ~/.zshrc
 }
+
+# The next line updates PATH for the Google Cloud SDK.
+if [ -f '/opt/homebrew/share/google-cloud-sdk/path.zsh.inc' ]; then . '/opt/homebrew/share/google-cloud-sdk/path.zsh.inc'; fi
+
+# The next line enables shell command completion for gcloud.
+if [ -f '/opt/homebrew/share/google-cloud-sdk/completion.zsh.inc' ]; then . '/opt/homebrew/share/google-cloud-sdk/completion.zsh.inc'; fi
+# The following lines have been added by Docker Desktop to enable Docker CLI completions.
+fpath=(/Users/jimmyjansen/.docker/completions $fpath)
+autoload -Uz compinit
+compinit
+# End of Docker CLI completions
+
+# bun completions
+[ -s "/Users/jimmyjansen/.bun/_bun" ] && source "/Users/jimmyjansen/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
