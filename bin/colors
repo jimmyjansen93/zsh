@@ -1,7 +1,65 @@
 #!/usr/bin/env bash
 
-# ANSI color codes
-declare -A COLORS=(
+# Check bash version for associative array support
+if [[ ${BASH_VERSION%%.*} -lt 4 ]]; then
+  # Fallback for older bash versions (macOS default)
+  # Define colors as individual variables
+  COLOR_black=$'\033[0;30m'
+  COLOR_red=$'\033[0;31m'
+  COLOR_green=$'\033[0;32m'
+  COLOR_yellow=$'\033[0;33m'
+  COLOR_blue=$'\033[0;34m'
+  COLOR_magenta=$'\033[0;35m'
+  COLOR_cyan=$'\033[0;36m'
+  COLOR_white=$'\033[0;37m'
+  COLOR_bright_black=$'\033[0;90m'
+  COLOR_bright_red=$'\033[0;91m'
+  COLOR_bright_green=$'\033[0;92m'
+  COLOR_bright_yellow=$'\033[0;93m'
+  COLOR_bright_blue=$'\033[0;94m'
+  COLOR_bright_magenta=$'\033[0;95m'
+  COLOR_bright_cyan=$'\033[0;96m'
+  COLOR_bright_white=$'\033[0;97m'
+  COLOR_bold=$'\033[1m'
+  COLOR_dim=$'\033[2m'
+  COLOR_italic=$'\033[3m'
+  COLOR_underline=$'\033[4m'
+  COLOR_blink=$'\033[5m'
+  COLOR_reverse=$'\033[7m'
+  COLOR_hidden=$'\033[8m'
+  COLOR_strikethrough=$'\033[9m'
+  COLOR_reset=$'\033[0m'
+  
+  BG_COLOR_black=$'\033[40m'
+  BG_COLOR_red=$'\033[41m'
+  BG_COLOR_green=$'\033[42m'
+  BG_COLOR_yellow=$'\033[43m'
+  BG_COLOR_blue=$'\033[44m'
+  BG_COLOR_magenta=$'\033[45m'
+  BG_COLOR_cyan=$'\033[46m'
+  BG_COLOR_white=$'\033[47m'
+  BG_COLOR_bright_black=$'\033[100m'
+  BG_COLOR_bright_red=$'\033[101m'
+  BG_COLOR_bright_green=$'\033[102m'
+  BG_COLOR_bright_yellow=$'\033[103m'
+  BG_COLOR_bright_blue=$'\033[104m'
+  BG_COLOR_bright_magenta=$'\033[105m'
+  BG_COLOR_bright_cyan=$'\033[106m'
+  BG_COLOR_bright_white=$'\033[107m'
+  
+  # Helper function to get color by name
+  get_color() {
+    local var_name="COLOR_$1"
+    echo "${!var_name}"
+  }
+  
+  get_bg_color() {
+    local var_name="BG_COLOR_$1"
+    echo "${!var_name}"
+  }
+else
+  # ANSI color codes
+  declare -A COLORS=(
   ["black"]='\033[0;30m'
   ["red"]='\033[0;31m'
   ["green"]='\033[0;32m'
@@ -29,8 +87,8 @@ declare -A COLORS=(
   ["reset"]='\033[0m'
 )
 
-# Background colors
-declare -A BG_COLORS=(
+  # Background colors
+  declare -A BG_COLORS=(
   ["black"]='\033[40m'
   ["red"]='\033[41m'
   ["green"]='\033[42m'
@@ -47,7 +105,16 @@ declare -A BG_COLORS=(
   ["bright_magenta"]='\033[105m'
   ["bright_cyan"]='\033[106m'
   ["bright_white"]='\033[107m'
-)
+  )
+  
+  get_color() {
+    echo "${COLORS[$1]}"
+  }
+  
+  get_bg_color() {
+    echo "${BG_COLORS[$1]}"
+  }
+fi
 
 # Function to handle color commands
 colors() {
@@ -57,31 +124,31 @@ colors() {
   case "$cmd" in
     # Foreground colors
     black|red|green|yellow|blue|magenta|cyan|white)
-      printf "%b%s%b" "${COLORS[$cmd]}" "$*" "${COLORS[reset]}"
+      printf "%b%s%b" "$(get_color "$cmd")" "$*" "$(get_color reset)"
       ;;
     bright_*)
-      printf "%b%s%b" "${COLORS[$cmd]}" "$*" "${COLORS[reset]}"
+      printf "%b%s%b" "$(get_color "$cmd")" "$*" "$(get_color reset)"
       ;;
     # Background colors
     bg.*)
       local bg_color="${cmd#bg.}"
-      printf "%b%s%b" "${BG_COLORS[$bg_color]}" "$*" "${COLORS[reset]}"
+      printf "%b%s%b" "$(get_bg_color "$bg_color")" "$*" "$(get_color reset)"
       ;;
     # Text styles
     bold|dim|italic|underline|blink|reverse|hidden|strikethrough)
-      printf "%b%s%b" "${COLORS[$cmd]}" "$*" "${COLORS[reset]}"
+      printf "%b%s%b" "$(get_color "$cmd")" "$*" "$(get_color reset)"
       ;;
     # Special commands
     reset)
-      printf "%b" "${COLORS[reset]}"
+      printf "%b" "$(get_color reset)"
       ;;
     raw.*)
       local color="${cmd#raw.}"
-      printf "%b" "${COLORS[$color]}"
+      printf "%b" "$(get_color "$color")"
       ;;
     bg.raw.*)
       local bg_color="${cmd#bg.raw.}"
-      printf "%b" "${BG_COLORS[$bg_color]}"
+      printf "%b" "$(get_bg_color "$bg_color")"
       ;;
     list)
       echo "Available colors:"
@@ -165,22 +232,22 @@ colors.bg.cyan() { colors bg.cyan "$@"; }
 colors.bg.white() { colors bg.white "$@"; }
 
 # Raw color code functions (for embedding in strings)
-colors.raw.black() { printf "%b" "${COLORS[black]}"; }
-colors.raw.red() { printf "%b" "${COLORS[red]}"; }
-colors.raw.green() { printf "%b" "${COLORS[green]}"; }
-colors.raw.yellow() { printf "%b" "${COLORS[yellow]}"; }
-colors.raw.blue() { printf "%b" "${COLORS[blue]}"; }
-colors.raw.magenta() { printf "%b" "${COLORS[magenta]}"; }
-colors.raw.cyan() { printf "%b" "${COLORS[cyan]}"; }
-colors.raw.white() { printf "%b" "${COLORS[white]}"; }
-colors.raw.reset() { printf "%b" "${COLORS[reset]}"; }
+colors.raw.black() { printf "%b" "$(get_color black)"; }
+colors.raw.red() { printf "%b" "$(get_color red)"; }
+colors.raw.green() { printf "%b" "$(get_color green)"; }
+colors.raw.yellow() { printf "%b" "$(get_color yellow)"; }
+colors.raw.blue() { printf "%b" "$(get_color blue)"; }
+colors.raw.magenta() { printf "%b" "$(get_color magenta)"; }
+colors.raw.cyan() { printf "%b" "$(get_color cyan)"; }
+colors.raw.white() { printf "%b" "$(get_color white)"; }
+colors.raw.reset() { printf "%b" "$(get_color reset)"; }
 
 # Export for backwards compatibility
-export GREEN="${COLORS[green]}"
-export RED="${COLORS[red]}"
-export YELLOW="${COLORS[yellow]}"
-export BLUE="${COLORS[blue]}"
-export RESET="${COLORS[reset]}"
+export GREEN="$(get_color green)"
+export RED="$(get_color red)"
+export YELLOW="$(get_color yellow)"
+export BLUE="$(get_color blue)"
+export RESET="$(get_color reset)"
 
 # If script is run directly, execute the colors function
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
