@@ -118,22 +118,92 @@ update_package_managers() {
   fi
 }
 
+show_help() {
+  cat << EOF
+Usage: update [OPTIONS]
+
+Update system packages and configuration repositories.
+
+Options:
+  -b, --brew-only   Only update brew packages (skip git and other package managers)
+  -g, --git-only    Only update git repositories (skip brew and package managers)
+  -h, --help        Show this help message
+
+Without options, runs full update including brew, git repos, and package managers.
+EOF
+}
+
 main() {
-  colors.blue "Starting system update..."
-  echo
-  colors.blue "_______________________________"
-  echo
-  echo
+  local git_only=false
+  local brew_only=false
   
-  run_brew_updates
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+      -g|--git-only)
+        git_only=true
+        shift
+        ;;
+      -b|--brew-only)
+        brew_only=true
+        shift
+        ;;
+      -h|--help)
+        show_help
+        exit 0
+        ;;
+      *)
+        colors.red "Unknown option: $1"
+        echo
+        show_help
+        exit 1
+        ;;
+    esac
+  done
   
-  colors.blue "Reloading zshrc"
-  echo
-  "$HOME/.config/zsh/bin/reload"
+  if [[ $git_only == true && $brew_only == true ]]; then
+    colors.red "Cannot use both --git-only and --brew-only flags together"
+    echo
+    show_help
+    exit 1
+  fi
   
-  update_git_repos
-  
-  update_package_managers
+  if [[ $git_only == true ]]; then
+    colors.blue "Starting git-only update..."
+    echo
+    colors.blue "_______________________________"
+    echo
+    echo
+    
+    update_git_repos
+  elif [[ $brew_only == true ]]; then
+    colors.blue "Starting brew-only update..."
+    echo
+    colors.blue "_______________________________"
+    echo
+    echo
+    
+    run_brew_updates
+    
+    colors.blue "Reloading zshrc"
+    echo
+    "$HOME/.config/zsh/bin/reload"
+  else
+    colors.blue "Starting system update..."
+    echo
+    colors.blue "_______________________________"
+    echo
+    echo
+    
+    run_brew_updates
+    
+    colors.blue "Reloading zshrc"
+    echo
+    "$HOME/.config/zsh/bin/reload"
+    
+    update_git_repos
+    
+    update_package_managers
+  fi
   
   colors.blue "_______________________________"
   echo

@@ -11,8 +11,10 @@ local path_dirs=(
   "$PNPM_HOME"
   "$HOME/.local/bin"
   "$(brew --prefix llvm)/bin"
+  "$HOME/.bun/bin"
 )
 export PATH="${(j|:|)path_dirs}:$PATH"
+export BUN_INSTALL="$HOME/.bun"
 unset path_dirs
 
 eval "$(fnm env --use-on-cd --corepack-enabled --resolve-engines)"
@@ -44,8 +46,25 @@ alias .....='cd ../../../..'
 alias -- -='cd -'
 
 command -v zoxide  >/dev/null 2>&1 && eval "$(zoxide init zsh)"
-command -v thefuck >/dev/null 2>&1 && eval "$(thefuck --alias)"
-command -v direnv  >/dev/null 2>&1 && eval "$(direnv hook zsh)"
+
+thefuck_lazy() {
+  if command -v thefuck >/dev/null 2>&1; then
+    eval "$(thefuck --alias)"
+    unfunction thefuck_lazy
+    fuck "$@"
+  fi
+}
+alias fuck='thefuck_lazy'
+
+if command -v direnv >/dev/null 2>&1; then
+  _direnv_hook() {
+    eval "$(direnv export zsh 2>/dev/null)"
+  }
+  typeset -ag precmd_functions
+  if [[ -z ${precmd_functions[(r)_direnv_hook]} ]]; then
+    precmd_functions+=(_direnv_hook)
+  fi
+fi
 
 source "$HOME/.config/zsh/bin/brew-wrapper"
 
@@ -66,7 +85,3 @@ compinit
 
 # bun completions
 [ -s "/Users/jimmyjansen/.bun/_bun" ] && source "/Users/jimmyjansen/.bun/_bun"
-
-# bun
-export BUN_INSTALL="$HOME/.bun"
-export PATH="$BUN_INSTALL/bin:$PATH"

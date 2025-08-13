@@ -1,0 +1,146 @@
+#!/bin/bash
+
+source "$HOME/.config/zsh/bin/colors"
+
+echo -e "${BLUE}Configuration Health Check${RESET}"
+echo -e "${BLUE}=========================${RESET}\n"
+
+ERRORS=0
+WARNINGS=0
+
+check_file() {
+  local file=$1
+  local desc=$2
+  if [[ -f $file ]]; then
+    echo -e "${GREEN}✓${RESET} $desc exists"
+  else
+    echo -e "${RED}✗${RESET} $desc missing: $file"
+    ((ERRORS++))
+  fi
+}
+
+check_dir() {
+  local dir=$1
+  local desc=$2
+  if [[ -d $dir ]]; then
+    echo -e "${GREEN}✓${RESET} $desc exists"
+  else
+    echo -e "${RED}✗${RESET} $desc missing: $dir"
+    ((ERRORS++))
+  fi
+}
+
+check_symlink() {
+  local link=$1
+  local target=$2
+  local desc=$3
+  if [[ -L $link ]]; then
+    actual_target=$(readlink "$link")
+    if [[ $actual_target == $target ]]; then
+      echo -e "${GREEN}✓${RESET} $desc correctly linked"
+    else
+      echo -e "${YELLOW}⚠${RESET} $desc points to wrong target: $actual_target"
+      ((WARNINGS++))
+    fi
+  else
+    echo -e "${RED}✗${RESET} $desc not a symlink: $link"
+    ((ERRORS++))
+  fi
+}
+
+check_command() {
+  local cmd=$1
+  local desc=$2
+  if command -v "$cmd" >/dev/null 2>&1; then
+    echo -e "${GREEN}✓${RESET} $desc installed"
+  else
+    echo -e "${YELLOW}⚠${RESET} $desc not installed"
+    ((WARNINGS++))
+  fi
+}
+
+echo -e "${CYAN}Essential Files:${RESET}"
+check_file "$HOME/.config/zsh/.zshrc" "ZSH configuration"
+check_file "$HOME/.gitconfig" "Git configuration"
+check_file "$HOME/.config/git/.gitignore_global" "Global gitignore"
+check_file "$HOME/.config/tmux/tmux.conf" "Tmux configuration"
+check_file "$HOME/.config/claude/settings.json" "Claude settings"
+check_file "$HOME/.config/starship/starship.toml" "Starship prompt"
+
+echo -e "\n${CYAN}Essential Directories:${RESET}"
+check_dir "$HOME/.config" "XDG config directory"
+check_dir "$HOME/.local/bin" "Local binaries"
+check_dir "$HOME/.config/zsh/bin" "ZSH scripts"
+check_dir "$HOME/.config/tmux/plugins/tpm" "Tmux plugin manager"
+
+echo -e "\n${CYAN}Symlinks:${RESET}"
+check_symlink "$HOME/.gitignore_global" "$HOME/.config/git/.gitignore_global" "Global gitignore symlink"
+
+echo -e "\n${CYAN}Commands:${RESET}"
+check_command "git" "Git"
+check_command "tmux" "Tmux"
+check_command "nvim" "Neovim"
+check_command "starship" "Starship"
+check_command "brew" "Homebrew"
+check_command "fnm" "Fast Node Manager"
+check_command "bun" "Bun"
+check_command "fzf" "Fuzzy finder"
+check_command "zoxide" "Zoxide"
+check_command "direnv" "Direnv"
+check_command "claude" "Claude Code"
+
+echo -e "\n${CYAN}MCP Servers:${RESET}"
+if command -v claude >/dev/null 2>&1; then
+  claude mcp list 2>&1 | while IFS= read -r line; do
+    if [[ $line == *"✓ Connected"* ]]; then
+      echo -e "${GREEN}✓${RESET} ${line%%:*} connected"
+    elif [[ $line == *"✗ Failed"* ]]; then
+      echo -e "${RED}✗${RESET} ${line%%:*} failed"
+      ((ERRORS++))
+    fi
+  done
+else
+  echo -e "${YELLOW}⚠${RESET} Claude not available to check MCP servers"
+  ((WARNINGS++))
+fi
+
+echo -e "\n${CYAN}Git Configuration:${RESET}"
+if git config --get user.email >/dev/null; then
+  echo -e "${GREEN}✓${RESET} Git user email configured: $(git config --get user.email)"
+else
+  echo -e "${RED}✗${RESET} Git user email not configured"
+  ((ERRORS++))
+fi
+
+if git config --get user.name >/dev/null; then
+  echo -e "${GREEN}✓${RESET} Git user name configured: $(git config --get user.name)"
+else
+  echo -e "${RED}✗${RESET} Git user name not configured"
+  ((ERRORS++))
+fi
+
+echo -e "\n${CYAN}Shell Environment:${RESET}"
+if [[ -n $XDG_CONFIG_HOME ]]; then
+  echo -e "${GREEN}✓${RESET} XDG_CONFIG_HOME set: $XDG_CONFIG_HOME"
+else
+  echo -e "${YELLOW}⚠${RESET} XDG_CONFIG_HOME not set"
+  ((WARNINGS++))
+fi
+
+if [[ -n $STARSHIP_CONFIG ]]; then
+  echo -e "${GREEN}✓${RESET} STARSHIP_CONFIG set"
+else
+  echo -e "${YELLOW}⚠${RESET} STARSHIP_CONFIG not set"
+  ((WARNINGS++))
+fi
+
+echo -e "\n${BLUE}Summary:${RESET}"
+if ((ERRORS == 0 && WARNINGS == 0)); then
+  echo -e "${GREEN}All checks passed!${RESET}"
+elif ((ERRORS == 0)); then
+  echo -e "${YELLOW}$WARNINGS warning(s) found${RESET}"
+else
+  echo -e "${RED}$ERRORS error(s)${RESET} and ${YELLOW}$WARNINGS warning(s)${RESET} found"
+fi
+
+exit $((ERRORS > 0 ? 1 : 0))
