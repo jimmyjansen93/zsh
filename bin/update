@@ -8,7 +8,7 @@ run_brew_updates() {
   if [[ -f $HOME/Brewfile ]]; then
     colors blue "Running brew bundle..."
     echo
-    if (cd "$HOME" && brew bundle >/dev/null 2>&1 && brew upgrade >/dev/null 2>&1); then
+    if (cd "$HOME" && brew bundle && brew upgrade); then
       colors green "brew bundle completed successfully"
       echo
     else
@@ -18,7 +18,7 @@ run_brew_updates() {
 
     colors blue "Brew cleanup..."
     echo
-    if brew bundle cleanup --force && brew cleanup --prune=all -s >/dev/null 2>&1; then
+    if brew bundle cleanup --force && brew cleanup --prune=all -s; then
       colors green "brew cleanup completed"
       echo
     else
