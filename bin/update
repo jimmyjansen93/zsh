@@ -5,7 +5,7 @@ source "$HOME/.config/zsh/bin/colors"
 CONFIG_DIR="$HOME/.config"
 
 run_brew_updates() {
-  if [[ -f $HOME/Brewfile ]]; then
+  if [[ -f "$HOME/Brewfile" ]]; then
     colors blue "Running brew bundle..."
     echo
     if (cd "$HOME" && brew bundle && brew upgrade); then
@@ -18,7 +18,7 @@ run_brew_updates() {
 
     colors blue "Brew cleanup..."
     echo
-    if brew bundle cleanup --force && brew cleanup --prune=all -s; then
+    if (cd "$HOME" && brew bundle cleanup --force && brew cleanup --prune=all -s); then
       colors green "brew cleanup completed"
       echo
     else
