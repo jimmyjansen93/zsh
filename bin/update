@@ -28,103 +28,102 @@ run_brew_updates() {
   fi
 }
 
-
 update_git_repos() {
   local -a pids=()
   local -a repo_names=()
   local temp_dir
   temp_dir=$(mktemp -d)
-  
+
   colors blue "Scanning for git repositories in $CONFIG_DIR..."
   echo
-  
+
   while IFS= read -r -d '' dir; do
     repo_name=$(basename "$(dirname "$dir")")
     repo_names+=("$repo_name")
-    
+
     (
       cd "$(dirname "$dir")" || exit 1
-      
+
       if [[ -n $(git status --porcelain 2>/dev/null) ]]; then
         git add -A >/dev/null 2>&1
         git commit -m "chore: auto-update config" >/dev/null 2>&1
       fi
-      
+
       git fetch origin >/dev/null 2>&1
-      
+
       local current_branch
       current_branch=$(git branch --show-current 2>/dev/null)
-      
+
       if [[ -z $current_branch ]]; then
-        echo "WARN: $repo_name is in detached HEAD state, skipping" > "$temp_dir/$repo_name.log"
+        echo "WARN: $repo_name is in detached HEAD state, skipping" >"$temp_dir/$repo_name.log"
         exit 2
       fi
-      
+
       local remote_branch="origin/$current_branch"
       if ! git show-ref --verify --quiet "refs/remotes/$remote_branch"; then
         remote_branch="origin/main"
         if ! git show-ref --verify --quiet "refs/remotes/$remote_branch"; then
           remote_branch="origin/master"
           if ! git show-ref --verify --quiet "refs/remotes/$remote_branch"; then
-            echo "WARN: No suitable remote branch found for $repo_name, skipping" > "$temp_dir/$repo_name.log"
+            echo "WARN: No suitable remote branch found for $repo_name, skipping" >"$temp_dir/$repo_name.log"
             exit 2
           fi
         fi
       fi
-      
+
       if git rebase "$remote_branch" >/dev/null 2>&1; then
         if git push origin "HEAD:${remote_branch#origin/}" >/dev/null 2>&1; then
-          echo "SUCCESS: Updated $repo_name (committed, rebased, and pushed)" > "$temp_dir/$repo_name.log"
+          echo "SUCCESS: Updated $repo_name (committed, rebased, and pushed)" >"$temp_dir/$repo_name.log"
           exit 0
         else
-          echo "FAIL: Push failed for $repo_name" > "$temp_dir/$repo_name.log"
+          echo "FAIL: Push failed for $repo_name" >"$temp_dir/$repo_name.log"
           exit 1
         fi
       else
         git rebase --abort >/dev/null 2>&1
-        echo "FAIL: Rebase failed for $repo_name, please resolve manually" > "$temp_dir/$repo_name.log"
+        echo "FAIL: Rebase failed for $repo_name, please resolve manually" >"$temp_dir/$repo_name.log"
         exit 1
       fi
-    ) & 
+    ) &
     pids+=("$!")
   done < <(find "$CONFIG_DIR" -maxdepth 2 -type d -name ".git" -print0 2>/dev/null)
-  
+
   # Wait for all background jobs and collect results
   local repos_updated=0
   local repos_failed=0
   local repos_skipped=0
-  
+
   for i in "${!pids[@]}"; do
     wait "${pids[$i]}"
     local exit_code=$?
     local repo_name="${repo_names[$i]}"
-    
+
     if [[ -f "$temp_dir/$repo_name.log" ]]; then
       local log_content
       log_content=$(<"$temp_dir/$repo_name.log")
-      
+
       case "$log_content" in
-        SUCCESS:*)
-          colors green "${log_content#SUCCESS: }"
-          echo
-          ((repos_updated++))
-          ;;
-        FAIL:*)
-          colors yellow "${log_content#FAIL: }" >&2
-          echo
-          ((repos_failed++))
-          ;;
-        WARN:*)
-          colors yellow "[${log_content#WARN: }]" >&2
-          echo
-          ((repos_skipped++))
-          ;;
+      SUCCESS:*)
+        colors green "${log_content#SUCCESS: }"
+        echo
+        ((repos_updated++))
+        ;;
+      FAIL:*)
+        colors yellow "${log_content#FAIL: }" >&2
+        echo
+        ((repos_failed++))
+        ;;
+      WARN:*)
+        colors yellow "[${log_content#WARN: }]" >&2
+        echo
+        ((repos_skipped++))
+        ;;
       esac
     fi
   done
-  
+
   rm -rf "$temp_dir"
-  
+
   colors blue "Git repos summary: $repos_updated updated, $repos_failed failed, $repos_skipped skipped"
   echo
 }
@@ -152,7 +151,7 @@ update_package_managers() {
 }
 
 show_help() {
-  cat << EOF
+  cat <<EOF
 Usage: update [OPTIONS]
 
 Update system packages and configuration repositories.
@@ -169,44 +168,44 @@ EOF
 main() {
   local git_only=false
   local brew_only=false
-  
+
   while [[ $# -gt 0 ]]; do
     case $1 in
-      -g|--git-only)
-        git_only=true
-        shift
-        ;;
-      -b|--brew-only)
-        brew_only=true
-        shift
-        ;;
-      -h|--help)
-        show_help
-        exit 0
-        ;;
-      *)
-        colors red "Unknown option: $1"
-        echo
-        show_help
-        exit 1
-        ;;
+    -g | --git-only)
+      git_only=true
+      shift
+      ;;
+    -b | --brew-only)
+      brew_only=true
+      shift
+      ;;
+    -h | --help)
+      show_help
+      exit 0
+      ;;
+    *)
+      colors red "Unknown option: $1"
+      echo
+      show_help
+      exit 1
+      ;;
     esac
   done
-  
+
   if [[ $git_only == true && $brew_only == true ]]; then
     colors red "Cannot use both --git-only and --brew-only flags together"
     echo
     show_help
     exit 1
   fi
-  
+
   if [[ $git_only == true ]]; then
     colors blue "Starting git-only update..."
     echo
     colors blue "_______________________________"
     echo
     echo
-    
+
     update_git_repos
   elif [[ $brew_only == true ]]; then
     colors blue "Starting brew-only update..."
@@ -214,9 +213,9 @@ main() {
     colors blue "_______________________________"
     echo
     echo
-    
+
     run_brew_updates
-    
+
     colors blue "Reloading zshrc"
     echo
     "$HOME/.config/zsh/bin/reload"
@@ -226,18 +225,18 @@ main() {
     colors blue "_______________________________"
     echo
     echo
-    
+
     run_brew_updates
-    
+
     colors blue "Reloading zshrc"
     echo
     "$HOME/.config/zsh/bin/reload"
-    
+
     update_git_repos
-    
+
     update_package_managers
   fi
-  
+
   colors blue "_______________________________"
   echo
   colors green "Update complete."
