@@ -105,3 +105,4 @@ fi
 
 # bun completions
 [ -s "/Users/jimmyjansen/.bun/_bun" ] && source "/Users/jimmyjansen/.bun/_bun"
+export PATH="/opt/homebrew/opt/openjdk@21/bin:$PATH"
